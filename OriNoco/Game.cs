@@ -1,7 +1,5 @@
 ﻿using SDL2;
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using static SDL2.SDL;
 
