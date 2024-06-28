@@ -1,0 +1,514 @@
+﻿using System;
+using static SDL2.SDL;
+
+namespace OriNoco
+{
+    public sealed class OriNocoPolygon : OriNocoShape
+    {
+        #region Factory Functions
+        internal void InitializeFromWorldVertices(
+          SDL_FPoint[] vertices,
+          float density,
+          float friction,
+          float restitution)
+        {
+            base.Initialize(density, friction, restitution);
+            this.UpdateArrays(vertices.Length);
+
+            this.countWorld = vertices.Length;
+            Array.Copy(vertices, this.worldVertices, this.countWorld);
+            OriNocoPolygon.ComputeAxes(vertices, this.countWorld, ref this.worldAxes);
+            this.worldSpaceAABB =
+              OriNocoPolygon.ComputeBounds(vertices, this.countWorld);
+
+            this.countBody = 0; // Needs to be set on metric compute
+        }
+
+        internal void InitializeFromBodyVertices(
+          SDL_FPoint[] vertices,
+          float density,
+          float friction,
+          float restitution)
+        {
+            base.Initialize(density, friction, restitution);
+            this.UpdateArrays(vertices.Length);
+
+            // World vertices will be computed on position update
+            this.countWorld = vertices.Length;
+
+            this.countBody = vertices.Length;
+            Array.Copy(vertices, this.bodyVertices, vertices.Length);
+            OriNocoPolygon.ComputeAxes(vertices, this.countBody, ref this.bodyAxes);
+            this.bodySpaceAABB =
+              OriNocoPolygon.ComputeBounds(vertices, this.countBody);
+
+        }
+        #endregion
+
+        #region Static Helpers
+        private static void WorldToBody(
+          OriNocoBody body,
+          SDL_FPoint[] worldVertices,
+          SDL_FPoint[] bodyVertices,
+          int count)
+        {
+            for (int i = 0; i < count; i++)
+                bodyVertices[i] = body.WorldToBodyPointCurrent(worldVertices[i]);
+        }
+
+        private static void ComputeAxes(
+          SDL_FPoint[] vertices,
+          int count,
+          ref Axis[] destination)
+        {
+            if (destination.Length < count)
+                destination = new Axis[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                SDL_FPoint u = vertices[i];
+                SDL_FPoint v = vertices[(i + 1) % count];
+                SDL_FPoint normal = (v - u).Left().normalized;
+                destination[i] = new Axis(normal, SDL_FPoint.Dot(normal, u));
+            }
+        }
+
+        private static OriNocoAABB ComputeBounds(
+          SDL_FPoint[] vertices,
+          int count)
+        {
+            float top = vertices[0].y;
+            float bottom = vertices[0].y;
+            float left = vertices[0].x;
+            float right = vertices[0].x;
+
+            for (int i = 1; i < count; i++)
+            {
+                top = Mathf.Max(top, vertices[i].y);
+                bottom = Mathf.Min(bottom, vertices[i].y);
+                left = Mathf.Min(left, vertices[i].x);
+                right = Mathf.Max(right, vertices[i].x);
+            }
+
+            return new OriNocoAABB(top, bottom, left, right);
+        }
+        #endregion
+
+        #region Properties
+        public override OriNocoShape.ShapeType Type { get { return ShapeType.Polygon; } }
+        #endregion
+
+        #region Fields
+        internal SDL_FPoint[] worldVertices;
+        internal Axis[] worldAxes;
+        internal int countWorld;
+
+        // Precomputed body-space values (these should never change unless we
+        // want to support moving shapes relative to their body root later on)
+        internal SDL_FPoint[] bodyVertices;
+        internal Axis[] bodyAxes;
+        internal int countBody;
+        #endregion
+
+        public OriNocoPolygon()
+        {
+            this.Reset();
+        }
+
+        protected override void Reset()
+        {
+            base.Reset();
+
+            this.countWorld = 0;
+            this.countBody = 0;
+        }
+
+        #region Functionalty Overrides
+        protected override void ComputeMetrics()
+        {
+            // If we were initialized with world points, we need to compute body
+            if (this.countBody == 0)
+            {
+                // Compute body-space geometry data (only need to do this once)
+                OriNocoPolygon.WorldToBody(
+                  this.Body,
+                  this.worldVertices,
+                  this.bodyVertices,
+                  this.countWorld);
+                this.countBody = this.countWorld;
+                OriNocoPolygon.ComputeAxes(this.bodyVertices, this.countBody, ref this.bodyAxes);
+                this.bodySpaceAABB =
+                  OriNocoPolygon.ComputeBounds(this.bodyVertices, this.countBody);
+            }
+
+            this.Area = this.ComputeArea();
+            this.Mass = this.Area * this.Density * OriNocoConfig.AreaMassRatio;
+            this.Inertia = this.ComputeInertia();
+        }
+
+        protected override void ApplyBodyPosition()
+        {
+            for (int i = 0; i < this.countWorld; i++)
+            {
+                this.worldVertices[i] =
+                  this.Body.BodyToWorldPointCurrent(this.bodyVertices[i]);
+                this.worldAxes[i] =
+                  this.Body.BodyToWorldAxisCurrent(this.bodyAxes[i]);
+            }
+
+            this.worldSpaceAABB =
+              OriNocoPolygon.ComputeBounds(this.worldVertices, this.countWorld);
+        }
+        #endregion
+
+        #region Test Overrides
+        protected override bool ShapeQueryPoint(
+          SDL_FPoint bodySpacePoint)
+        {
+            for (int i = 0; i < this.countBody; i++)
+            {
+                Axis axis = this.bodyAxes[i];
+                if (SDL_FPoint.Dot(axis.Normal, bodySpacePoint) > axis.Width)
+                    return false;
+            }
+            return true;
+        }
+
+        protected override bool ShapeQueryCircle(
+          SDL_FPoint bodySpaceOrigin,
+          float radius)
+        {
+            // Get the axis on the polygon closest to the circle's origin
+            float penetration;
+            int foundIndex =
+              Collision.FindAxisMaxPenetration(
+                bodySpaceOrigin,
+                radius,
+                this,
+                out penetration);
+
+            if (foundIndex < 0)
+                return false;
+
+            int numVertices = this.countBody;
+            SDL_FPoint a = this.bodyVertices[foundIndex];
+            SDL_FPoint b = this.bodyVertices[(foundIndex + 1) % numVertices];
+            Axis axis = this.bodyAxes[foundIndex];
+
+            // If the circle is past one of the two vertices, check it like
+            // a circle-circle intersection where the vertex has radius 0
+            float d = OriNocoMath.Cross(axis.Normal, bodySpaceOrigin);
+            if (d > OriNocoMath.Cross(axis.Normal, a))
+                return Collision.TestPointCircleSimple(a, bodySpaceOrigin, radius);
+            if (d < OriNocoMath.Cross(axis.Normal, b))
+                return Collision.TestPointCircleSimple(b, bodySpaceOrigin, radius);
+            return true;
+        }
+
+        protected override bool ShapeRayCast(
+          ref OriNocoRayCast bodySpaceRay,
+          ref OriNocoRayResult result)
+        {
+            int foundIndex = -1;
+            float inner = float.MaxValue;
+            float outer = 0;
+            bool couldBeContained = true;
+
+            for (int i = 0; i < this.countBody; i++)
+            {
+                Axis curAxis = this.bodyAxes[i];
+
+                // Distance between the ray origin and the axis/edge along the 
+                // normal (i.e., shortest distance between ray origin and the edge)
+                float proj =
+                  SDL_FPoint.Dot(curAxis.Normal, bodySpaceRay.origin) - curAxis.Width;
+
+                // See if the point is outside of any of the axes
+                if (proj > 0.0f)
+                    couldBeContained = false;
+
+                // Projection of the ray direction onto the axis normal (use 
+                // negative normal because we want to get the penetration length)
+                float slope = SDL_FPoint.Dot(-curAxis.Normal, bodySpaceRay.direction);
+
+                if (slope == 0.0f)
+                    continue;
+                float dist = proj / slope;
+
+                // The ray is pointing opposite the edge normal (towards the edge)
+                if (slope > 0.0f)
+                {
+                    if (dist > inner)
+                    {
+                        return false;
+                    }
+                    if (dist > outer)
+                    {
+                        outer = dist;
+                        foundIndex = i;
+                    }
+                }
+                // The ray is pointing along the edge normal (away from the edge)
+                else
+                {
+                    if (dist < outer)
+                    {
+                        return false;
+                    }
+                    if (dist < inner)
+                    {
+                        inner = dist;
+                    }
+                }
+            }
+
+            if (couldBeContained == true)
+            {
+                result.SetContained(this);
+                return true;
+            }
+            else if (foundIndex >= 0 && outer <= bodySpaceRay.distance)
+            {
+                result.Set(
+                  this,
+                  outer,
+                  this.bodyAxes[foundIndex].Normal);
+                return true;
+            }
+
+            return false;
+        }
+
+        protected override bool ShapeCircleCast(
+          ref OriNocoRayCast bodySpaceRay,
+          float radius,
+          ref OriNocoRayResult result)
+        {
+            bool checkVertices =
+              this.CircleCastVertices(
+                ref bodySpaceRay,
+                radius,
+                ref result);
+
+            bool checkEdges =
+              this.CircleCastEdges(
+                ref bodySpaceRay,
+                radius,
+                ref result);
+
+            // We need to check both to get the closest hit distance
+            return checkVertices || checkEdges;
+        }
+        #endregion
+
+        #region Collision Helpers
+        /// <summary>
+        /// Gets the vertices defining an edge of the polygon.
+        /// </summary>
+        internal void GetEdge(int indexFirst, out SDL_FPoint a, out SDL_FPoint b)
+        {
+            a = this.worldVertices[indexFirst];
+            b = this.worldVertices[(indexFirst + 1) % this.countWorld];
+        }
+
+        /// <summary>
+        /// Returns the axis at the given index.
+        /// </summary>
+        internal Axis GetWorldAxis(int index)
+        {
+            return this.worldAxes[index];
+        }
+
+        /// <summary>
+        /// A world-space point query, used as a shortcut in collision tests.
+        /// </summary>
+        internal bool ContainsPoint(
+          SDL_FPoint worldSpacePoint)
+        {
+            for (int i = 0; i < this.countWorld; i++)
+            {
+                Axis axis = this.worldAxes[i];
+                if (SDL_FPoint.Dot(axis.Normal, worldSpacePoint) > axis.Width)
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Special case that ignores axes pointing away from the normal.
+        /// </summary>
+        internal bool ContainsPointPartial(
+          SDL_FPoint worldSpacePoint,
+          SDL_FPoint worldSpaceNormal)
+        {
+            foreach (Axis axis in this.worldAxes)
+                if (SDL_FPoint.Dot(axis.Normal, worldSpaceNormal) >= 0.0f &&
+                    SDL_FPoint.Dot(axis.Normal, worldSpacePoint) > axis.Width)
+                    return false;
+            return true;
+        }
+        #endregion
+
+        #region Internals
+        private void UpdateArrays(int length)
+        {
+            if ((this.worldVertices == null) ||
+                (this.worldVertices.Length < length))
+            {
+                this.worldVertices = new SDL_FPoint[length];
+                this.worldAxes = new Axis[length];
+            }
+
+            if ((this.bodyVertices == null) ||
+                (this.bodyVertices.Length < length))
+            {
+                this.bodyVertices = new SDL_FPoint[length];
+                this.bodyAxes = new Axis[length];
+            }
+        }
+
+        private float ComputeArea()
+        {
+            float sum = 0;
+
+            for (int i = 0; i < this.countBody; i++)
+            {
+                SDL_FPoint v = this.bodyVertices[i];
+                SDL_FPoint u = this.bodyVertices[(i + 1) % this.countBody];
+                SDL_FPoint w = this.bodyVertices[(i + 2) % this.countBody];
+
+                sum += u.x * (v.y - w.y);
+            }
+
+            return sum / 2.0f;
+        }
+
+        private float ComputeInertia()
+        {
+            float s1 = 0.0f;
+            float s2 = 0.0f;
+
+            for (int i = 0; i < this.countBody; i++)
+            {
+                SDL_FPoint v = this.bodyVertices[i];
+                SDL_FPoint u = this.bodyVertices[(i + 1) % this.countBody];
+
+                float a = OriNocoMath.Cross(u, v);
+                float b = v.sqrMagnitude + u.sqrMagnitude + SDL_FPoint.Dot(v, u);
+                s1 += a * b;
+                s2 += a;
+            }
+
+            return s1 / (6.0f * s2);
+        }
+
+        private bool CircleCastEdges(
+          ref OriNocoRayCast bodySpaceRay,
+          float radius,
+          ref OriNocoRayResult result)
+        {
+            int foundIndex = -1;
+            bool couldBeContained = true;
+
+            // Pre-compute and initialize values
+            float shortestDist = float.MaxValue;
+            SDL_FPoint v3 = bodySpaceRay.direction.Left();
+
+            // Check the edges -- this will be different from the raycast because
+            // we care about staying within the ends of the edge line segment
+            for (int i = 0; i < this.countBody; i++)
+            {
+                Axis curAxis = this.bodyAxes[i];
+
+                // Push the edges out by the radius
+                SDL_FPoint extension = curAxis.Normal * radius;
+                SDL_FPoint a = this.bodyVertices[i] + extension;
+                SDL_FPoint b = this.bodyVertices[(i + 1) % this.countBody] + extension;
+
+                // Update the check for containment
+                if (couldBeContained == true)
+                {
+                    float proj =
+                      SDL_FPoint.Dot(curAxis.Normal, bodySpaceRay.origin) - curAxis.Width;
+
+                    // The point lies outside of the outer layer
+                    if (proj > radius)
+                    {
+                        couldBeContained = false;
+                    }
+                    // The point lies between the outer and inner layer
+                    else if (proj > 0.0f)
+                    {
+                        // See if the point is within the center Vornoi region of the edge
+                        float d = OriNocoMath.Cross(curAxis.Normal, bodySpaceRay.origin);
+                        if (d > OriNocoMath.Cross(curAxis.Normal, a))
+                            couldBeContained = false;
+                        if (d < OriNocoMath.Cross(curAxis.Normal, b))
+                            couldBeContained = false;
+                    }
+                }
+
+                // For the cast, only consider rays pointing towards the edge
+                if (SDL_FPoint.Dot(curAxis.Normal, bodySpaceRay.direction) >= 0.0f)
+                    continue;
+
+                // See: 
+                // https://rootllama.wordpress.com/2014/06/20/ray-line-segment-intersection-test-in-2d/
+                SDL_FPoint v1 = bodySpaceRay.origin - a;
+                SDL_FPoint v2 = b - a;
+
+                float denominator = SDL_FPoint.Dot(v2, v3);
+                float t1 = OriNocoMath.Cross(v2, v1) / denominator;
+                float t2 = SDL_FPoint.Dot(v1, v3) / denominator;
+
+                if ((t2 >= 0.0f) && (t2 <= 1.0f) && (t1 > 0.0f) && (t1 < shortestDist))
+                {
+                    // See if the point is outside of any of the axes
+                    shortestDist = t1;
+                    foundIndex = i;
+                }
+            }
+
+            // Report results
+            if (couldBeContained == true)
+            {
+                result.SetContained(this);
+                return true;
+            }
+            else if (foundIndex >= 0 && shortestDist <= bodySpaceRay.distance)
+            {
+                result.Set(
+                  this,
+                  shortestDist,
+                  this.bodyAxes[foundIndex].Normal);
+                return true;
+            }
+            return false;
+        }
+
+        private bool CircleCastVertices(
+          ref OriNocoRayCast bodySpaceRay,
+          float radius,
+          ref OriNocoRayResult result)
+        {
+            float sqrRadius = radius * radius;
+            bool castHit = false;
+
+            for (int i = 0; i < this.countBody; i++)
+            {
+                castHit |=
+                  Collision.CircleRayCast(
+                    this,
+                    this.bodyVertices[i],
+                    sqrRadius,
+                    ref bodySpaceRay,
+                    ref result);
+                if (result.IsContained == true)
+                    return true;
+            }
+
+            return castHit;
+        }
+        #endregion
+    }
+}

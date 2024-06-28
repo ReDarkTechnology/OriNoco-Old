@@ -1,0 +1,714 @@
+﻿/*
+ *  VolatilePhysics - A 2D Physics Library for Networked Games
+ *  Copyright (c) 2015-2016 - Alexander Shoulson - http://ashoulson.com
+ *
+ *  This software is provided 'as-is', without any express or implied
+ *  warranty. In no event will the authors be held liable for any damages
+ *  arising from the use of this software.
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, subject to the following restrictions:
+ *  
+ *  1. The origin of this software must not be misrepresented; you must not
+ *     claim that you wrote the original software. If you use this software
+ *     in a product, an acknowledgment in the product documentation would be
+ *     appreciated but is not required.
+ *  2. Altered source versions must be plainly marked as such, and must not be
+ *     misrepresented as being the original software.
+ *  3. This notice may not be removed or altered from any source distribution.
+*/
+
+using System;
+using static SDL2.SDL;
+
+namespace OriNoco
+{
+    public enum OriNocoBodyType
+    {
+        Static,
+        Dynamic,
+        Invalid,
+    }
+
+    public delegate bool VoltBodyFilter(OriNocoBody body);
+    public delegate bool VoltCollisionFilter(OriNocoBody bodyA, OriNocoBody bodyB);
+
+    public class OriNocoBody
+      : IOriNocoPoolable<OriNocoBody>
+      , IIndexedValue
+    {
+        #region Interface
+        IOriNocoPool<OriNocoBody> IOriNocoPoolable<OriNocoBody>.Pool { get; set; }
+        void IOriNocoPoolable<OriNocoBody>.Reset() { this.Reset(); }
+        int IIndexedValue.Index { get; set; }
+        #endregion
+
+        /// <summary>
+        /// A predefined filter that disallows collisions between dynamic bodies.
+        /// </summary>
+        public static bool DisallowDynamic(OriNocoBody a, OriNocoBody b)
+        {
+            return
+              (a != null) &&
+              (b != null) &&
+              (a.IsStatic || b.IsStatic);
+        }
+
+        #region History
+        /// <summary>
+        /// Tries to get a reference frame for a given number of ticks behind 
+        /// the current tick. Returns true if a value was found, false if a
+        /// value was not found (in which case we clamp to the nearest).
+        /// </summary>
+        public bool TryGetSpace(
+          int ticksBehind,
+          out SDL_FPoint position,
+          out SDL_FPoint facing)
+        {
+            if (ticksBehind < 0)
+                throw new ArgumentOutOfRangeException("ticksBehind");
+
+            if (ticksBehind == 0)
+            {
+                position = this.Position;
+                facing = this.Facing;
+                return true;
+            }
+
+            if (this.history == null)
+            {
+                position = this.Position;
+                facing = this.Facing;
+                return false;
+            }
+
+            HistoryRecord record;
+            bool found = this.history.TryGet(ticksBehind - 1, out record);
+            position = record.position;
+            facing = record.facing;
+            return found;
+        }
+
+        /// <summary>
+        /// Initializes the buffer for storing past body states/spaces.
+        /// </summary>
+        internal void AssignHistory(HistoryBuffer history)
+        {
+            OriNocoDebug.Assert(this.IsStatic == false);
+            this.history = history;
+        }
+
+        /// <summary>
+        /// Stores a snapshot of this body's current state/space to a tick.
+        /// </summary>
+        private void StoreState()
+        {
+            if (this.history != null)
+                this.history.Store(this.currentState);
+        }
+
+        /// <summary>
+        /// Retrieves a snapshot of the body's state/space at a tick.
+        /// Logs an error and defaults to the current state if it can't be found.
+        /// </summary>
+        private HistoryRecord GetState(int ticksBehind)
+        {
+            if ((ticksBehind == 0) || (this.history == null))
+                return this.currentState;
+
+            HistoryRecord output;
+            this.history.TryGet(ticksBehind - 1, out output);
+            return output;
+        }
+        #endregion
+
+        public static bool Filter(OriNocoBody body, VoltBodyFilter filter)
+        {
+            return ((filter == null) || (filter.Invoke(body) == true));
+        }
+
+        /// <summary>
+        /// Static objects are considered to have infinite mass and cannot move.
+        /// </summary>
+        public bool IsStatic
+        {
+            get
+            {
+                if (this.BodyType == OriNocoBodyType.Invalid)
+                    throw new InvalidOperationException();
+                return this.BodyType == OriNocoBodyType.Static;
+            }
+        }
+
+        /// <summary>
+        /// If we're doing historical queries or tests, the body may have since
+        /// been removed from the world.
+        /// </summary>
+        public bool IsInWorld { get { return this.World != null; } }
+
+        // Some basic properties are stored in an internal mutable
+        // record to avoid code redundancy when performing conversions
+        public SDL_FPoint Position
+        {
+            get { return this.currentState.position; }
+            private set { this.currentState.position = value; }
+        }
+
+        public SDL_FPoint Facing
+        {
+            get { return this.currentState.facing; }
+            private set { this.currentState.facing = value; }
+        }
+
+        public OriNocoAABB AABB
+        {
+            get { return this.currentState.aabb; }
+            private set { this.currentState.aabb = value; }
+        }
+
+#if DEBUG
+        internal bool IsInitialized { get; set; }
+#endif
+
+        /// <summary>
+        /// For attaching arbitrary data to this body.
+        /// </summary>
+        public object UserData { get; set; }
+
+        public OriNocoWorld World { get; private set; }
+        public OriNocoBodyType BodyType { get; private set; }
+        public VoltCollisionFilter CollisionFilter { private get; set; }
+
+        /// <summary>
+        /// Current angle in radians.
+        /// </summary>
+        public float Angle { get; private set; }
+
+        public SDL_FPoint LinearVelocity { get; set; }
+        public float AngularVelocity { get; set; }
+
+        public SDL_FPoint Force { get; private set; }
+        public float Torque { get; private set; }
+
+        public float Mass { get; private set; }
+        public float Inertia { get; private set; }
+        public float InvMass { get; private set; }
+        public float InvInertia { get; private set; }
+
+        internal SDL_FPoint BiasVelocity { get; private set; }
+        internal float BiasRotation { get; private set; }
+
+        // Used for broadphase structures
+        internal int ProxyId { get; set; }
+
+        internal OriNocoShape[] shapes;
+        internal int shapeCount;
+
+        private HistoryBuffer history;
+        private HistoryRecord currentState;
+
+        #region Manipulation
+        public void AddTorque(float torque)
+        {
+            this.Torque += torque;
+        }
+
+        public void AddForce(SDL_FPoint force)
+        {
+            this.Force += force;
+        }
+
+        public void AddForce(SDL_FPoint force, SDL_FPoint point)
+        {
+            this.Force += force;
+            this.Torque += OriNocoMath.Cross(this.Position - point, force);
+        }
+
+        public void Set(SDL_FPoint position, float radians)
+        {
+            this.Position = position;
+            this.Angle = radians;
+            this.Facing = OriNocoMath.Polar(radians);
+            this.OnPositionUpdated();
+        }
+        #endregion
+
+        #region Tests
+        /// <summary>
+        /// Checks if an AABB overlaps with our AABB.
+        /// </summary>
+        internal bool QueryAABBOnly(
+          OriNocoAABB worldBounds,
+          int ticksBehind)
+        {
+            HistoryRecord record = this.GetState(ticksBehind);
+
+            // AABB check done in world space (because it keeps changing)
+            return record.aabb.Intersect(worldBounds);
+        }
+
+        /// <summary>
+        /// Checks if a point is contained in this body. 
+        /// Begins with AABB checks unless bypassed.
+        /// </summary>
+        internal bool QueryPoint(
+          SDL_FPoint point,
+          int ticksBehind,
+          bool bypassAABB = false)
+        {
+            HistoryRecord record = this.GetState(ticksBehind);
+
+            // AABB check done in world space (because it keeps changing)
+            if (bypassAABB == false)
+                if (record.aabb.QueryPoint(point) == false)
+                    return false;
+
+            // Actual query on shapes done in body space
+            SDL_FPoint bodySpacePoint = record.WorldToBodyPoint(point);
+            for (int i = 0; i < this.shapeCount; i++)
+                if (this.shapes[i].QueryPoint(bodySpacePoint))
+                    return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if a circle overlaps with this body. 
+        /// Begins with AABB checks.
+        /// </summary>
+        internal bool QueryCircle(
+          SDL_FPoint origin,
+          float radius,
+          int ticksBehind,
+          bool bypassAABB = false)
+        {
+            HistoryRecord record = this.GetState(ticksBehind);
+
+            // AABB check done in world space (because it keeps changing)
+            if (bypassAABB == false)
+                if (record.aabb.QueryCircleApprox(origin, radius) == false)
+                    return false;
+
+            // Actual query on shapes done in body space
+            SDL_FPoint bodySpaceOrigin = record.WorldToBodyPoint(origin);
+            for (int i = 0; i < this.shapeCount; i++)
+                if (this.shapes[i].QueryCircle(bodySpaceOrigin, radius))
+                    return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Performs a ray cast check on this body. 
+        /// Begins with AABB checks.
+        /// </summary>
+        internal bool RayCast(
+          ref OriNocoRayCast ray,
+          ref OriNocoRayResult result,
+          int ticksBehind,
+          bool bypassAABB = false)
+        {
+            HistoryRecord record = this.GetState(ticksBehind);
+
+            // AABB check done in world space (because it keeps changing)
+            if (bypassAABB == false)
+                if (record.aabb.RayCast(ref ray) == false)
+                    return false;
+
+            // Actual tests on shapes done in body space
+            OriNocoRayCast bodySpaceRay = record.WorldToBodyRay(ref ray);
+            for (int i = 0; i < this.shapeCount; i++)
+                if (this.shapes[i].RayCast(ref bodySpaceRay, ref result))
+                    if (result.IsContained)
+                        return true;
+
+            // We need to convert the results back to world space to be any use
+            // (Doesn't matter if we were contained since there will be no normal)
+            if (result.Body == this)
+                result.normal = record.BodyToWorldDirection(result.normal);
+            return result.IsValid;
+        }
+
+        /// <summary>
+        /// Performs a circle cast check on this body. 
+        /// Begins with AABB checks.
+        /// </summary>
+        internal bool CircleCast(
+          ref OriNocoRayCast ray,
+          float radius,
+          ref OriNocoRayResult result,
+          int ticksBehind,
+          bool bypassAABB = false)
+        {
+            HistoryRecord record = this.GetState(ticksBehind);
+
+            // AABB check done in world space (because it keeps changing)
+            if (bypassAABB == false)
+                if (record.aabb.CircleCastApprox(ref ray, radius) == false)
+                    return false;
+
+            // Actual tests on shapes done in body space
+            OriNocoRayCast bodySpaceRay = record.WorldToBodyRay(ref ray);
+            for (int i = 0; i < this.shapeCount; i++)
+                if (this.shapes[i].CircleCast(ref bodySpaceRay, radius, ref result))
+                    if (result.IsContained)
+                        return true;
+
+            // We need to convert the results back to world space to be any use
+            // (Doesn't matter if we were contained since there will be no normal)
+            if (result.Body == this)
+                result.normal = record.BodyToWorldDirection(result.normal);
+            return result.IsValid;
+        }
+        #endregion
+
+        public OriNocoBody()
+        {
+            this.Reset();
+            this.ProxyId = -1;
+        }
+
+        internal void InitializeDynamic(
+          SDL_FPoint position,
+          float radians,
+          OriNocoShape[] shapesToAdd)
+        {
+            this.Initialize(position, radians, shapesToAdd);
+            this.OnPositionUpdated();
+            this.ComputeDynamics();
+        }
+
+        internal void InitializeStatic(
+          SDL_FPoint position,
+          float radians,
+          OriNocoShape[] shapesToAdd)
+        {
+            this.Initialize(position, radians, shapesToAdd);
+            this.OnPositionUpdated();
+            this.SetStatic();
+        }
+
+        private void Initialize(
+          SDL_FPoint position,
+          float radians,
+          OriNocoShape[] shapesToAdd)
+        {
+            this.Position = position;
+            this.Angle = radians;
+            this.Facing = OriNocoMath.Polar(radians);
+
+#if DEBUG
+            for (int i = 0; i < shapesToAdd.Length; i++)
+                OriNocoDebug.Assert(shapesToAdd[i].IsInitialized);
+#endif
+
+            if ((this.shapes == null) || (this.shapes.Length < shapesToAdd.Length))
+                this.shapes = new OriNocoShape[shapesToAdd.Length];
+            Array.Copy(shapesToAdd, this.shapes, shapesToAdd.Length);
+            this.shapeCount = shapesToAdd.Length;
+            for (int i = 0; i < this.shapeCount; i++)
+                this.shapes[i].AssignBody(this);
+
+#if DEBUG
+            this.IsInitialized = true;
+#endif
+        }
+
+        internal void Update()
+        {
+            if (this.history != null)
+                this.history.Store(this.currentState);
+            this.Integrate();
+            this.OnPositionUpdated();
+        }
+
+        internal void AssignWorld(OriNocoWorld world)
+        {
+            this.World = world;
+        }
+
+        internal void FreeHistory()
+        {
+            if ((this.World != null) && (this.history != null))
+                this.World.FreeHistory(this.history);
+            this.history = null;
+        }
+
+        internal void FreeShapes()
+        {
+            if (this.World != null)
+            {
+                for (int i = 0; i < this.shapeCount; i++)
+                    this.World.FreeShape(this.shapes[i]);
+                for (int i = 0; i < this.shapes.Length; i++)
+                    this.shapes[i] = null;
+            }
+            this.shapeCount = 0;
+        }
+
+        /// <summary>
+        /// Used for saving the body as part of another structure. The body
+        /// will retain all geometry data and associated metrics, but its
+        /// position, velocity, forces, and all related history will be cleared.
+        /// </summary>
+        internal void PartialReset()
+        {
+            this.history = null;
+            this.currentState = default(HistoryRecord);
+
+            this.LinearVelocity = SDL_FPoint.zero;
+            this.AngularVelocity = 0.0f;
+
+            this.Force = SDL_FPoint.zero;
+            this.Torque = 0.0f;
+
+            this.BiasVelocity = SDL_FPoint.zero;
+            this.BiasRotation = 0.0f;
+        }
+
+        /// <summary>
+        /// Full reset. Clears out all data for pooling. Call FreeShapes() first.
+        /// </summary>
+        private void Reset()
+        {
+            OriNocoDebug.Assert(this.shapeCount == 0);
+
+#if DEBUG
+            this.IsInitialized = false;
+#endif
+
+            this.UserData = null;
+            this.World = null;
+            this.BodyType = OriNocoBodyType.Invalid;
+            this.CollisionFilter = null;
+
+            this.Angle = 0.0f;
+            this.LinearVelocity = SDL_FPoint.zero;
+            this.AngularVelocity = 0.0f;
+
+            this.Force = SDL_FPoint.zero;
+            this.Torque = 0.0f;
+
+            this.Mass = 0.0f;
+            this.Inertia = 0.0f;
+            this.InvMass = 0.0f;
+            this.InvInertia = 0.0f;
+
+            this.BiasVelocity = SDL_FPoint.zero;
+            this.BiasRotation = 0.0f;
+
+            this.history = null;
+            this.currentState = default(HistoryRecord);
+        }
+
+        #region Collision
+        internal bool CanCollide(OriNocoBody other)
+        {
+            // Ignore self and static-static collisions
+            if ((this == other) || (this.IsStatic && other.IsStatic))
+                return false;
+
+            if (this.CollisionFilter != null)
+                return this.CollisionFilter.Invoke(this, other);
+            return true;
+        }
+
+        internal void ApplyImpulse(SDL_FPoint j, SDL_FPoint r)
+        {
+            this.LinearVelocity += this.InvMass * j;
+            this.AngularVelocity -= this.InvInertia * OriNocoMath.Cross(j, r);
+        }
+
+        internal void ApplyBias(SDL_FPoint j, SDL_FPoint r)
+        {
+            this.BiasVelocity += this.InvMass * j;
+            this.BiasRotation -= this.InvInertia * OriNocoMath.Cross(j, r);
+        }
+        #endregion
+
+        #region Transformation Shortcuts
+        internal SDL_FPoint WorldToBodyPointCurrent(SDL_FPoint vector)
+        {
+            return this.currentState.WorldToBodyPoint(vector);
+        }
+
+        internal SDL_FPoint BodyToWorldPointCurrent(SDL_FPoint vector)
+        {
+            return this.currentState.BodyToWorldPoint(vector);
+        }
+
+        internal Axis BodyToWorldAxisCurrent(Axis axis)
+        {
+            return this.currentState.BodyToWorldAxis(axis);
+        }
+        #endregion
+
+        #region Helpers
+        /// <summary>
+        /// Applies the current position and angle to shapes and the AABB.
+        /// </summary>
+        private void OnPositionUpdated()
+        {
+            for (int i = 0; i < this.shapeCount; i++)
+                this.shapes[i].OnBodyPositionUpdated();
+            this.UpdateAABB();
+        }
+
+        /// <summary>
+        /// Builds the AABB by combining all the shape AABBs.
+        /// </summary>
+        private void UpdateAABB()
+        {
+            float top = float.NegativeInfinity;
+            float right = float.NegativeInfinity;
+            float bottom = float.PositiveInfinity;
+            float left = float.PositiveInfinity;
+
+            for (int i = 0; i < this.shapeCount; i++)
+            {
+                OriNocoAABB aabb = this.shapes[i].AABB;
+                top = Mathf.Max(top, aabb.Top);
+                right = Mathf.Max(right, aabb.Right);
+                bottom = Mathf.Min(bottom, aabb.Bottom);
+                left = Mathf.Min(left, aabb.Left);
+            }
+
+            this.AABB = new OriNocoAABB(top, bottom, left, right);
+        }
+
+        /// <summary>
+        /// Computes forces and dynamics and applies them to position and angle.
+        /// </summary>
+        private void Integrate()
+        {
+            // Apply damping
+            this.LinearVelocity *= this.World.Damping;
+            this.AngularVelocity *= this.World.Damping;
+
+            // Calculate total force and torque
+            SDL_FPoint totalForce = this.Force * this.InvMass;
+            float totalTorque = this.Torque * this.InvInertia;
+
+            // See http://www.niksula.hut.fi/~hkankaan/Homepages/gravity.html
+            this.IntegrateForces(totalForce, totalTorque, 0.5f);
+            this.IntegrateVelocity();
+            this.IntegrateForces(totalForce, totalTorque, 0.5f);
+
+            this.ClearForces();
+        }
+
+        private void IntegrateForces(
+          SDL_FPoint force,
+          float torque,
+          float mult)
+        {
+            this.LinearVelocity += this.World.DeltaTime * force * mult;
+            this.AngularVelocity -= this.World.DeltaTime * torque * mult;
+        }
+
+        private void IntegrateVelocity()
+        {
+            this.Position +=
+              this.World.DeltaTime * this.LinearVelocity + this.BiasVelocity;
+            this.Angle +=
+              this.World.DeltaTime * this.AngularVelocity + this.BiasRotation;
+            this.Facing = OriNocoMath.Polar(this.Angle);
+        }
+
+        private void ClearForces()
+        {
+            this.Force = SDL_FPoint.zero;
+            this.Torque = 0.0f;
+            this.BiasVelocity = SDL_FPoint.zero;
+            this.BiasRotation = 0.0f;
+        }
+
+        private void ComputeDynamics()
+        {
+            this.Mass = 0.0f;
+            this.Inertia = 0.0f;
+
+            for (int i = 0; i < this.shapeCount; i++)
+            {
+                OriNocoShape shape = this.shapes[i];
+                if (shape.Density == 0.0f)
+                    continue;
+                float curMass = shape.Mass;
+                float curInertia = shape.Inertia;
+
+                this.Mass += curMass;
+                this.Inertia += curMass * curInertia;
+            }
+
+            if (this.Mass < OriNocoConfig.MINIMUM_DYNAMIC_MASS)
+            {
+                throw new InvalidOperationException("Mass of dynamic too small");
+            }
+            else
+            {
+                this.InvMass = 1.0f / this.Mass;
+                this.InvInertia = 1.0f / this.Inertia;
+            }
+
+            this.BodyType = OriNocoBodyType.Dynamic;
+        }
+
+        private void SetStatic()
+        {
+            this.Mass = 0.0f;
+            this.Inertia = 0.0f;
+            this.InvMass = 0.0f;
+            this.InvInertia = 0.0f;
+
+            this.BodyType = OriNocoBodyType.Static;
+        }
+        #endregion
+
+        #region Debug
+#if UNITY && DEBUG
+    public void GizmoDraw(
+      Color edgeColor,
+      Color normalColor,
+      Color bodyOriginColor,
+      Color shapeOriginColor,
+      Color bodyAabbColor,
+      Color shapeAabbColor,
+      float normalLength)
+    {
+      Color current = Gizmos.color;
+
+      // Draw origin
+      Gizmos.color = bodyOriginColor;
+      Gizmos.DrawWireSphere(this.Position, 0.1f);
+
+      // Draw facing
+      Gizmos.color = normalColor;
+      Gizmos.DrawLine(
+        this.Position,
+        this.Position + this.Facing * normalLength);
+
+      this.AABB.GizmoDraw(bodyAabbColor);
+
+      for (int i = 0; i < this.shapeCount; i++)
+        this.shapes[i].GizmoDraw(
+          edgeColor,
+          normalColor,
+          shapeOriginColor,
+          shapeAabbColor,
+          normalLength);
+
+      Gizmos.color = current;
+    }
+
+    public void GizmoDrawHistory(Color aabbColor)
+    {
+      Color current = Gizmos.color;
+
+      if (this.history != null)
+        foreach (HistoryRecord record in this.history.GetValues())
+          record.aabb.GizmoDraw(aabbColor);
+
+      Gizmos.color = current;
+    }
+#endif
+        #endregion
+    }
+}
