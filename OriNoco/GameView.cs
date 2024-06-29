@@ -6,9 +6,9 @@ using WeifenLuo.WinFormsUI.Docking;
 
 namespace OriNoco
 {
-    public partial class ChartView : DockContent
+    public partial class GameView : DockContent
     {
-        public ChartView()
+        public GameView()
         {
             InitializeComponent();
         }
