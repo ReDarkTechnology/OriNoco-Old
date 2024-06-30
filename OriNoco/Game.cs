@@ -25,9 +25,9 @@ namespace OriNoco
         /// <summary>
         /// The location of the SDL2 window
         /// </summary>
-        public SDL_Point Location
+        public Point Location
         {
-            get => Window == IntPtr.Zero ? new SDL_Point() : GetWindowLocation();
+            get => Window == IntPtr.Zero ? new Point() : GetWindowLocation();
             set
             {
                 if (Window != IntPtr.Zero)
@@ -35,18 +35,18 @@ namespace OriNoco
             }
         }
 
-        private SDL_Point GetWindowLocation()
+        private Point GetWindowLocation()
         {
             SDL_GetWindowPosition(Window, out int x, out int y);
-            return new SDL_Point(x, y);
+            return new Point(x, y);
         }
 
         /// <summary>
         /// The size of the SDL2 window
         /// </summary>
-        public SDL_Point Size
+        public Point Size
         {
-            get => Window == IntPtr.Zero ? new SDL_Point() : GetWindowSize();
+            get => Window == IntPtr.Zero ? new Point() : GetWindowSize();
             set
             {
                 if (Window != IntPtr.Zero)
@@ -57,7 +57,7 @@ namespace OriNoco
         /// <summary>
         /// The size of the SDL2 renderer
         /// </summary>
-        public SDL_FPoint ViewportSize { get; private set; }
+        public Vector2 ViewportSize { get; private set; }
         /// <summary>
         /// SDL_Window created for this game
         /// </summary>
@@ -216,7 +216,7 @@ namespace OriNoco
             {
                 SetColor(180, 240, 255, 255);
 
-                var rect = new SDL_FRect(0, 0, 15, 15);
+                var rect = new Rect(0, 0, 15, 15);
                 rect.position += (ViewportSize / 2) - (rect.size / 2);
 
                 DrawFilledBox(rect);
@@ -230,7 +230,7 @@ namespace OriNoco
         /// Draw a cross span across the screen centered on that point
         /// </summary>
         /// <param name="point"></param>
-        public void DrawPoint(SDL_FPoint point)
+        public void DrawPoint(Vector2 point)
         {
             SDL_RenderDrawLineF(Renderer, point.x, 0, point.x, ViewportSize.y);
             SDL_RenderDrawLineF(Renderer, 0, point.y, ViewportSize.x, point.y);
@@ -239,27 +239,32 @@ namespace OriNoco
         /// <summary>
         /// Draws a filled box
         /// </summary>
-        public void DrawFilledBox(SDL_FRect rect) => SDL_RenderFillRectF(Renderer, ref rect);
+        public void DrawFilledBox(Rect rect) => SDL_RenderFillRectF(Renderer, ref rect);
 
         /// <summary>
         /// Draws an outlined box
         /// </summary>
-        public void DrawOutlinedBox(SDL_FRect rect) => SDL_RenderDrawRectF(Renderer, ref rect);
+        public void DrawOutlinedBox(Rect rect) => SDL_RenderDrawRectF(Renderer, ref rect);
 
         /// <summary>
         /// Sets the color of the render buffer
         /// </summary>
-        public void SetColor(SDL_Color color) => SDL_SetRenderDrawColor(Renderer, color);
+        public void SetColor(Color32 color) => SDL_SetRenderDrawColor(Renderer, color);
 
         /// <summary>
         /// Sets the color of the render buffer
         /// </summary>
-        public void SetColor(SDL_FColor color) => SDL_SetRenderDrawColor(Renderer, color);
+        public void SetColor(Color color) => SDL_SetRenderDrawColor(Renderer, color);
 
         /// <summary>
         /// Sets the color of the render buffer
         /// </summary>
         public void SetColor(byte r, byte g, byte b, byte a) => SDL_SetRenderDrawColor(Renderer, r, g, b, a);
+
+        /// <summary>
+        /// Sets the color of the render buffer
+        /// </summary>
+        public void SetColor(byte r, byte g, byte b) => SDL_SetRenderDrawColor(Renderer, r, g, b, 255);
 
         /// <summary>
         /// Clears the render buffer
@@ -274,17 +279,17 @@ namespace OriNoco
         /// <summary>
         /// Used when the mouse is not on the window
         /// </summary>
-        private SDL_FPoint lastMousePosition;
+        private Vector2 lastMousePosition;
         /// <summary>
         /// Get the position of the mouse relative to the current window
         /// </summary>
-        public virtual SDL_FPoint GetMousePosition()
+        public virtual Vector2 GetMousePosition()
         {
             var windowFocus = SDL_GetMouseFocus();
             if (windowFocus == Window)
             {
                 SDL_GetMouseState(out int mx, out int my);
-                lastMousePosition = new SDL_FPoint(mx, my);
+                lastMousePosition = new Vector2(mx, my);
             }
             return lastMousePosition;
         }
@@ -292,19 +297,19 @@ namespace OriNoco
         /// <summary>
         /// Get the resolution of the renderer
         /// </summary>
-        public SDL_FPoint GetOutputSize()
+        public Vector2 GetOutputSize()
         {
             SDL_GetRendererOutputSize(Renderer, out int w, out int h);
-            return new SDL_FPoint(w, h);
+            return new Vector2(w, h);
         }
 
         /// <summary>
         /// The size of the window SDL2 is rendering at
         /// </summary>
-        private SDL_Point GetWindowSize()
+        private Point GetWindowSize()
         {
             SDL_GetWindowSize(Window, out int x, out int y);
-            return new SDL_Point(x, y);
+            return new Point(x, y);
         }
         #endregion
     }

@@ -49,7 +49,7 @@ namespace OriNoco
 		/// [m11, m12]
 		/// [m21, m22]
 		/// </summary>
-		public Matrix2x2(SDL_FPoint first, SDL_FPoint second)
+		public Matrix2x2(Vector2 first, Vector2 second)
 		{
 			this.m11 = first.x;
 			this.m12 = first.y;
@@ -121,20 +121,20 @@ namespace OriNoco
 			}
 		}
 
-		public SDL_FPoint TransformPoint(SDL_FPoint origin, SDL_FPoint point) => (this * (point - origin)) + origin;
+		public Vector2 TransformPoint(Vector2 origin, Vector2 point) => (this * (point - origin)) + origin;
 		public override int GetHashCode() => GetColumn(0).GetHashCode() ^ GetColumn(1).GetHashCode() << 2;
 		public override bool Equals(object obj) => obj is Matrix2x2 && Equals((Matrix2x2)obj);
 		public bool Equals(Matrix2x2 other) => GetColumn(0).Equals(other.GetColumn(0)) && GetColumn(1).Equals(other.GetColumn(1));
-		public SDL_FPoint GetColumn(int index)
+		public Vector2 GetColumn(int index)
 		{
-			SDL_FPoint result;
+			Vector2 result;
 			switch (index)
 			{
 				case 0:
-					result = new SDL_FPoint(m11, m21);
+					result = new Vector2(m11, m21);
 					break;
 				case 1:
-					result = new SDL_FPoint(m12, m22);
+					result = new Vector2(m12, m22);
 					break;
 				default:
 					throw new IndexOutOfRangeException("Invalid column index!");
@@ -142,16 +142,16 @@ namespace OriNoco
 			return result;
 		}
 
-		public SDL_FPoint GetRow(int index)
+		public Vector2 GetRow(int index)
 		{
-			SDL_FPoint result;
+			Vector2 result;
 			switch (index)
 			{
 				case 0:
-					result = new SDL_FPoint(m11, m12);
+					result = new Vector2(m11, m12);
 					break;
 				case 1:
-					result = new SDL_FPoint(m21, m22);
+					result = new Vector2(m21, m22);
 					break;
 				default:
 					throw new IndexOutOfRangeException("Invalid column index!");
@@ -161,18 +161,18 @@ namespace OriNoco
 
 		public static bool operator ==(Matrix2x2 left, Matrix2x2 right) => left.Equals(right);
 		public static bool operator !=(Matrix2x2 left, Matrix2x2 right) => !left.Equals(right);
-		public static SDL_FPoint operator *(Matrix2x2 lhs, SDL_FPoint vector)
+		public static Vector2 operator *(Matrix2x2 lhs, Vector2 vector)
 		{
-			SDL_FPoint result = default;
+			Vector2 result = default;
 			result.x = (lhs.m11 * vector.x) + (lhs.m12 * vector.y);
 			result.y = (lhs.m21 * vector.x) + (lhs.m22 * vector.y);
 			return result;
 		}
 
 		public static Matrix2x2 operator *(Matrix2x2 lhs, float val) => new Matrix2x2(lhs.m11 * val, lhs.m21 * val, lhs.m12 * val, lhs.m22 * val);
-		public static SDL_FPoint operator /(Matrix2x2 lhs, SDL_FPoint vector)
+		public static Vector2 operator /(Matrix2x2 lhs, Vector2 vector)
 		{
-			SDL_FPoint result = default;
+			Vector2 result = default;
 			result.x = (lhs.m11 / vector.x) + (lhs.m12 / vector.y);
 			result.y = (lhs.m21 / vector.x) + (lhs.m22 / vector.y);
 			return result;

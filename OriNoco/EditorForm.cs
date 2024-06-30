@@ -31,9 +31,10 @@ namespace OriNoco
 
             ControlUtil.AddDraggableHandle(titleBar, Handle);
             ControlUtil.AddDraggableHandle(menuStrip, Handle);
+            Application.AddMessageFilter(new MouseMessageFilter());
+
             mainDockPanel.Theme = Theme;
             Theme.ApplyTo(menuStrip);
-            Application.AddMessageFilter(new MouseMessageFilter());
 
             ColorReference.BorderColor = Color.FromArgb(0, 122, 204);
             this.AddBorder(Point.Empty, ColorReference);
@@ -41,9 +42,12 @@ namespace OriNoco
 
         private void EditorForm_Load(object sender, EventArgs e)
         {
+            GUI.LoadFont("times.ttf", 32);
+
             ShowEditorView();
             ShowGameView();
             ShowChartView();
+
             Editor.Show();
         }
         #endregion
@@ -51,7 +55,6 @@ namespace OriNoco
         #region Engine
         private void gameUpdate_Tick(object sender, EventArgs e)
         {
-            Console.WriteLine($"ContainsFocus: " + ContainsFocus.ToString());
             if (wasFocus != ContainsFocus)
             {
                 wasFocus = ContainsFocus;
@@ -81,7 +84,7 @@ namespace OriNoco
         public void ShowChartView()
         {
             if (Chart == null)
-                Chart = new ChartView();
+                Chart = new ChartView(this);
             Chart.Show(mainDockPanel, DockState.DockRight);
         }
         #endregion
@@ -115,6 +118,16 @@ namespace OriNoco
 
         public void UpdateWindowBorder(bool windowed)
         {
+            if (windowed)
+            {
+                mainPanel.Size = new Size(Size.Width - 6, Size.Height - 6);
+                mainPanel.Location = new Point(3, 3);
+            }
+            else
+            {
+                mainPanel.Size = Size;
+                mainPanel.Location = new Point(0, 0);
+            }
             ColorReference.BorderColor = windowed ? Color.FromArgb(0, 122, 204) : Color.FromArgb(45, 45, 48);
             Refresh();
         }
@@ -137,48 +150,56 @@ namespace OriNoco
                 int y = (int)((m.LParam.ToInt64() & 0xFFFF0000) >> 16);
                 Point pt = PointToClient(new Point(x, y));
                 Size clientSize = ClientSize;
+
                 // Lower right corner
                 if (pt.X >= clientSize.Width - 16 && pt.Y >= clientSize.Height - 16 && clientSize.Height >= 16)
                 {
                     m.Result = (IntPtr)(IsMirrored ? htBottomLeft : htBottomRight);
                     return;
                 }
+
                 // Lower left corner
                 if (pt.X <= 16 && pt.Y >= clientSize.Height - 16 && clientSize.Height >= 16)
                 {
                     m.Result = (IntPtr)(IsMirrored ? htBottomRight : htBottomLeft);
                     return;
                 }
+
                 // Upper right corner
                 if (pt.X <= 16 && pt.Y <= 16 && clientSize.Height >= 16)
                 {
                     m.Result = (IntPtr)(IsMirrored ? htTopRight : htTopLeft);
                     return;
                 }
+
                 // Left corner
                 if (pt.X >= clientSize.Width - 16 && pt.Y <= 16 && clientSize.Height >= 16)
                 {
                     m.Result = (IntPtr)(IsMirrored ? htTopLeft : htTopRight);
                     return;
                 }
+
                 // Top border
                 if (pt.Y <= 16 && clientSize.Height >= 16)
                 {
                     m.Result = (IntPtr)(htTop);
                     return;
                 }
+
                 // Bottom border
                 if (pt.Y >= clientSize.Height - 16 && clientSize.Height >= 16)
                 {
                     m.Result = (IntPtr)(htBottom);
                     return;
                 }
+
                 // Left border
                 if (pt.X <= 16 && clientSize.Height >= 16)
                 {
                     m.Result = (IntPtr)(htLeft);
                     return;
                 }
+
                 // Right border
                 if (pt.X >= clientSize.Width - 16 && clientSize.Height >= 16)
                 {

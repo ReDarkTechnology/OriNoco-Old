@@ -51,6 +51,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "EditorView";
             this.Text = "Scene";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.EditorView_FormClosed);
             this.ResumeLayout(false);
 
         }

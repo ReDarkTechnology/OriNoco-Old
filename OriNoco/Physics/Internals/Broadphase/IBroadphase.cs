@@ -13,8 +13,8 @@ namespace OriNoco
     // actual body's bounding box, as that will happen in the beginning of the
     // narrowphase test.
     void QueryOverlap(OriNocoAABB aabb, OriNocoBuffer<OriNocoBody> outBuffer);
-    void QueryPoint(SDL_FPoint point, OriNocoBuffer<OriNocoBody> outBuffer);
-    void QueryCircle(SDL_FPoint point, float radius, OriNocoBuffer<OriNocoBody> outBuffer);
+    void QueryPoint(Vector2 point, OriNocoBuffer<OriNocoBody> outBuffer);
+    void QueryCircle(Vector2 point, float radius, OriNocoBuffer<OriNocoBody> outBuffer);
     void RayCast(ref OriNocoRayCast ray, OriNocoBuffer<OriNocoBody> outBuffer);
     void CircleCast(ref OriNocoRayCast ray, float radius, OriNocoBuffer<OriNocoBody> outBuffer);
   }

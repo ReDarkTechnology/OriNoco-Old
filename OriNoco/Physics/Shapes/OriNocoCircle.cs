@@ -6,7 +6,7 @@ namespace OriNoco
     {
         #region Factory Functions
         internal void InitializeFromWorldSpace(
-          SDL_FPoint worldSpaceOrigin,
+          Vector2 worldSpaceOrigin,
           float radius,
           float density,
           float friction,
@@ -24,18 +24,18 @@ namespace OriNoco
         #region Properties
         public override ShapeType Type { get { return ShapeType.Circle; } }
 
-        public SDL_FPoint Origin { get { return this.worldSpaceOrigin; } }
+        public Vector2 Origin { get { return this.worldSpaceOrigin; } }
         public float Radius { get { return this.radius; } }
         #endregion
 
         #region Fields
-        internal SDL_FPoint worldSpaceOrigin;
+        internal Vector2 worldSpaceOrigin;
         internal float radius;
         internal float sqrRadius;
 
         // Precomputed body-space values (these should never change unless we
         // want to support moving shapes relative to their body root later on)
-        private SDL_FPoint bodySpaceOrigin;
+        private Vector2 bodySpaceOrigin;
         #endregion
 
         public OriNocoCircle()
@@ -47,10 +47,10 @@ namespace OriNoco
         {
             base.Reset();
 
-            this.worldSpaceOrigin = SDL_FPoint.zero;
+            this.worldSpaceOrigin = Vector2.zero;
             this.radius = 0.0f;
             this.sqrRadius = 0.0f;
-            this.bodySpaceOrigin = SDL_FPoint.zero;
+            this.bodySpaceOrigin = Vector2.zero;
         }
 
         #region Functionality Overrides
@@ -76,7 +76,7 @@ namespace OriNoco
 
         #region Test Overrides
         protected override bool ShapeQueryPoint(
-          SDL_FPoint bodySpacePoint)
+          Vector2 bodySpacePoint)
         {
             return
               Collision.TestPointCircleSimple(
@@ -86,7 +86,7 @@ namespace OriNoco
         }
 
         protected override bool ShapeQueryCircle(
-          SDL_FPoint bodySpaceOrigin,
+          Vector2 bodySpaceOrigin,
           float radius)
         {
             return

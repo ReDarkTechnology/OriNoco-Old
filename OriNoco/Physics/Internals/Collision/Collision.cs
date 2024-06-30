@@ -90,7 +90,7 @@ namespace OriNoco
       if (index < 0)
         return null;
 
-      SDL_FPoint a, b;
+      Vector2 a, b;
       poly.GetEdge(index, out a, out b);
       Axis axis = poly.GetWorldAxis(index);
 
@@ -104,7 +104,7 @@ namespace OriNoco
 
       // Build the collision Manifold
       Manifold manifold = world.AllocateManifold().Assign(world, circ, poly);
-      SDL_FPoint pos =
+      Vector2 pos =
         circ.worldSpaceOrigin - (circ.radius + penetration / 2) * axis.Normal;
       manifold.AddContact(pos, -axis.Normal, penetration);
       return manifold;
@@ -141,11 +141,11 @@ namespace OriNoco
     /// Simple check for point-circle containment.
     /// </summary>
     internal static bool TestPointCircleSimple(
-      SDL_FPoint point,
-      SDL_FPoint origin,
+      Vector2 point,
+      Vector2 origin,
       float radius)
     {
-      SDL_FPoint delta = origin - point;
+      Vector2 delta = origin - point;
       return delta.sqrMagnitude <= (radius * radius);
     }
 
@@ -153,8 +153,8 @@ namespace OriNoco
     /// Simple check for two overlapping circles.
     /// </summary>
     internal static bool TestCircleCircleSimple(
-      SDL_FPoint originA,
-      SDL_FPoint originB,
+      Vector2 originA,
+      Vector2 originB,
       float radiusA,
       float radiusB)
     {
@@ -167,12 +167,12 @@ namespace OriNoco
     /// </summary>
     internal static bool CircleRayCast(
       OriNocoShape shape,
-      SDL_FPoint shapeOrigin,
+      Vector2 shapeOrigin,
       float sqrRadius,
       ref OriNocoRayCast ray,
       ref OriNocoRayResult result)
     {
-      SDL_FPoint toOrigin = shapeOrigin - ray.origin;
+      Vector2 toOrigin = shapeOrigin - ray.origin;
 
       if (toOrigin.sqrMagnitude < sqrRadius)
       {
@@ -180,12 +180,12 @@ namespace OriNoco
         return true;
       }
 
-      float slope = SDL_FPoint.Dot(toOrigin, ray.direction);
+      float slope = Vector2.Dot(toOrigin, ray.direction);
       if (slope < 0)
         return false;
 
       float sqrSlope = slope * slope;
-      float d = sqrRadius + sqrSlope - SDL_FPoint.Dot(toOrigin, toOrigin);
+      float d = sqrRadius + sqrSlope - Vector2.Dot(toOrigin, toOrigin);
       if (d < 0)
         return false;
 
@@ -195,7 +195,7 @@ namespace OriNoco
 
       // N.B.: For historical raycasts this normal will be wrong!
       // Must be either transformed back to world or invalidated later.
-      SDL_FPoint normal = (dist * ray.direction - toOrigin).normalized;
+      Vector2 normal = (dist * ray.direction - toOrigin).normalized;
       result.Set(shape, dist, normal);
       return true;
     }
@@ -206,7 +206,7 @@ namespace OriNoco
     /// Outputs the minimum distance between the axis and the point.
     /// </summary>
     internal static int FindAxisShortestDistance(
-      SDL_FPoint point,
+      Vector2 point,
       Axis[] axes,
       out float minDistance)
     {
@@ -216,7 +216,7 @@ namespace OriNoco
 
       for (int i = 0; i < axes.Length; i++)
       {
-        float dot = SDL_FPoint.Dot(axes[i].Normal, point);
+        float dot = Vector2.Dot(axes[i].Normal, point);
         float dist = axes[i].Width - dot;
 
         if (dist < 0.0f)
@@ -244,7 +244,7 @@ namespace OriNoco
     /// Outputs the penetration depth of the circle in the axis (if any).
     /// </summary>
     internal static int FindAxisMaxPenetration(
-      SDL_FPoint origin,
+      Vector2 origin,
       float radius,
       OriNocoPolygon poly,
       out float penetration)
@@ -256,7 +256,7 @@ namespace OriNoco
       for (int i = 0; i < poly.countWorld; i++)
       {
         Axis axis = poly.worldAxes[i];
-        float dot = SDL_FPoint.Dot(axis.Normal, origin);
+        float dot = Vector2.Dot(axis.Normal, origin);
         float dist = dot - axis.Width - radius;
 
         if (dist > 0)
@@ -285,10 +285,10 @@ namespace OriNoco
       OriNocoWorld world,
       OriNocoCircle shapeA,
       OriNocoShape shapeB,
-      SDL_FPoint overrideBCenter, // For testing vertices in circles
+      Vector2 overrideBCenter, // For testing vertices in circles
       float overrideBRadius)
     {
-      SDL_FPoint r = overrideBCenter - shapeA.worldSpaceOrigin;
+      Vector2 r = overrideBCenter - shapeA.worldSpaceOrigin;
       float min = shapeA.radius + overrideBRadius;
       float distSq = r.sqrMagnitude;
 
@@ -298,7 +298,7 @@ namespace OriNoco
       float dist = Mathf.Sqrt(distSq);
       float distInv = 1.0f / dist;
 
-      SDL_FPoint pos =
+      Vector2 pos =
         shapeA.worldSpaceOrigin +
         (0.5f + distInv * (shapeA.radius - min / 2.0f)) * r;
 
@@ -314,7 +314,7 @@ namespace OriNoco
       OriNocoPolygon poly2,
       out Axis axis)
     {
-      axis = new Axis(SDL_FPoint.zero, float.NegativeInfinity);
+      axis = new Axis(Vector2.zero, float.NegativeInfinity);
 
       for (int i = 0; i < poly1.countWorld; i++)
       {
@@ -322,8 +322,8 @@ namespace OriNoco
         float min = float.PositiveInfinity;
         for (int j = 0; j < poly2.countWorld; j++)
         {
-          SDL_FPoint v = poly2.worldVertices[j];
-          min = Mathf.Min(min, SDL_FPoint.Dot(a.Normal, v));
+          Vector2 v = poly2.worldVertices[j];
+          min = Mathf.Min(min, Vector2.Dot(a.Normal, v));
         }
         min -= a.Width;
 
@@ -346,7 +346,7 @@ namespace OriNoco
     private static void FindVerts(
       OriNocoPolygon poly1,
       OriNocoPolygon poly2,
-      SDL_FPoint normal,
+      Vector2 normal,
       float penetration,
       Manifold manifold)
     {
@@ -354,7 +354,7 @@ namespace OriNoco
 
       for (int i = 0; i < poly1.countWorld; i++)
       {
-        SDL_FPoint vertex = poly1.worldVertices[i];
+        Vector2 vertex = poly1.worldVertices[i];
         if (poly2.ContainsPoint(vertex) == true)
         {
           if (manifold.AddContact(vertex, normal, penetration) == false)
@@ -365,7 +365,7 @@ namespace OriNoco
 
       for (int i = 0; i < poly2.countWorld; i++)
       {
-        SDL_FPoint vertex = poly2.worldVertices[i];
+        Vector2 vertex = poly2.worldVertices[i];
         if (poly1.ContainsPoint(vertex) == true)
         {
           if (manifold.AddContact(vertex, normal, penetration) == false)
@@ -385,13 +385,13 @@ namespace OriNoco
     private static void FindVertsFallback(
       OriNocoPolygon poly1,
       OriNocoPolygon poly2,
-      SDL_FPoint normal,
+      Vector2 normal,
       float penetration,
       Manifold manifold)
     {
       for (int i = 0; i < poly1.countWorld; i++)
       {
-        SDL_FPoint vertex = poly1.worldVertices[i];
+        Vector2 vertex = poly1.worldVertices[i];
         if (poly2.ContainsPointPartial(vertex, normal) == true)
           if (manifold.AddContact(vertex, normal, penetration) == false)
             return;
@@ -399,7 +399,7 @@ namespace OriNoco
 
       for (int i = 0; i < poly2.countWorld; i++)
       {
-        SDL_FPoint vertex = poly2.worldVertices[i];
+        Vector2 vertex = poly2.worldVertices[i];
         if (poly1.ContainsPointPartial(vertex, -normal) == true)
           if (manifold.AddContact(vertex, normal, penetration) == false)
             return;

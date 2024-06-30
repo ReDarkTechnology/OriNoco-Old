@@ -10,8 +10,8 @@ namespace OriNoco
         IntPtr surface;
         IntPtr texture;
 
-        private SDL_Color _color = new SDL_Color(255, 255, 255, 255);
-        public SDL_Color color
+        private Color32 _color = new Color32(255, 255, 255, 255);
+        public Color32 color
         {
             get => _color;
             set
@@ -22,8 +22,8 @@ namespace OriNoco
             }
         }
 
-        public SDL_Rect sourceRect = new SDL_Rect();
-        public SDL_FPoint pivot = new SDL_FPoint();
+        public Rect32 sourceRect = new Rect32();
+        public Vector2 pivot = new Vector2();
 
         private IntPtr _renderer;
         public IntPtr renderer
@@ -37,6 +37,9 @@ namespace OriNoco
             }
         }
 
+        public int w;
+        public int h;
+
         public TextureRenderer(IntPtr renderer, string filePath)
         {
             if (!File.Exists(filePath)) throw new FileNotFoundException(filePath);
@@ -45,7 +48,9 @@ namespace OriNoco
             if (surface == IntPtr.Zero) throw new Exception("Failed to load image: " + SDL_image.IMG_GetError());
 
             texture = SDL_CreateTextureFromSurface(renderer, surface);
-            SDL_QueryTexture(texture, out _, out _, out sourceRect.w, out sourceRect.h);
+            SDL_QueryTexture(texture, out _, out _, out w, out h);
+
+            sourceRect = new Rect32(0, 0, w, h);
 
             _renderer = renderer;
         }
@@ -72,7 +77,7 @@ namespace OriNoco
             }
         }
 
-        private void ChangeColor(SDL_Color color)
+        private void ChangeColor(Color32 color)
         {
             SDL_DestroyTexture(texture);
 
@@ -81,11 +86,11 @@ namespace OriNoco
             texture = SDL_CreateTextureFromSurface(renderer, surface);
         }
 
-        public void Draw(SDL_FRect destRect, double angle, SDL_FPoint center, SDL_RendererFlip flipMode) =>
+        public void Draw(Rect destRect, double angle, Vector2 center, SDL_RendererFlip flipMode) =>
             SDL_RenderCopyExF(renderer, texture, ref sourceRect, ref destRect, angle, ref center, flipMode);
 
-        SDL_FPoint center = new SDL_FPoint();
-        public void Draw(SDL_FRect destRect, double angle)
+        Vector2 center = new Vector2();
+        public void Draw(Rect destRect, double angle)
         {
             center = destRect.size / 2;
             SDL_SetRenderDrawColor(renderer, _color);

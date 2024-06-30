@@ -7,7 +7,7 @@ namespace OriNoco
     {
         #region Factory Functions
         internal void InitializeFromWorldVertices(
-          SDL_FPoint[] vertices,
+          Vector2[] vertices,
           float density,
           float friction,
           float restitution)
@@ -25,7 +25,7 @@ namespace OriNoco
         }
 
         internal void InitializeFromBodyVertices(
-          SDL_FPoint[] vertices,
+          Vector2[] vertices,
           float density,
           float friction,
           float restitution)
@@ -48,8 +48,8 @@ namespace OriNoco
         #region Static Helpers
         private static void WorldToBody(
           OriNocoBody body,
-          SDL_FPoint[] worldVertices,
-          SDL_FPoint[] bodyVertices,
+          Vector2[] worldVertices,
+          Vector2[] bodyVertices,
           int count)
         {
             for (int i = 0; i < count; i++)
@@ -57,7 +57,7 @@ namespace OriNoco
         }
 
         private static void ComputeAxes(
-          SDL_FPoint[] vertices,
+          Vector2[] vertices,
           int count,
           ref Axis[] destination)
         {
@@ -66,15 +66,15 @@ namespace OriNoco
 
             for (int i = 0; i < count; i++)
             {
-                SDL_FPoint u = vertices[i];
-                SDL_FPoint v = vertices[(i + 1) % count];
-                SDL_FPoint normal = (v - u).Left().normalized;
-                destination[i] = new Axis(normal, SDL_FPoint.Dot(normal, u));
+                Vector2 u = vertices[i];
+                Vector2 v = vertices[(i + 1) % count];
+                Vector2 normal = (v - u).Left().normalized;
+                destination[i] = new Axis(normal, Vector2.Dot(normal, u));
             }
         }
 
         private static OriNocoAABB ComputeBounds(
-          SDL_FPoint[] vertices,
+          Vector2[] vertices,
           int count)
         {
             float top = vertices[0].y;
@@ -99,13 +99,13 @@ namespace OriNoco
         #endregion
 
         #region Fields
-        internal SDL_FPoint[] worldVertices;
+        internal Vector2[] worldVertices;
         internal Axis[] worldAxes;
         internal int countWorld;
 
         // Precomputed body-space values (these should never change unless we
         // want to support moving shapes relative to their body root later on)
-        internal SDL_FPoint[] bodyVertices;
+        internal Vector2[] bodyVertices;
         internal Axis[] bodyAxes;
         internal int countBody;
         #endregion
@@ -163,19 +163,19 @@ namespace OriNoco
 
         #region Test Overrides
         protected override bool ShapeQueryPoint(
-          SDL_FPoint bodySpacePoint)
+          Vector2 bodySpacePoint)
         {
             for (int i = 0; i < this.countBody; i++)
             {
                 Axis axis = this.bodyAxes[i];
-                if (SDL_FPoint.Dot(axis.Normal, bodySpacePoint) > axis.Width)
+                if (Vector2.Dot(axis.Normal, bodySpacePoint) > axis.Width)
                     return false;
             }
             return true;
         }
 
         protected override bool ShapeQueryCircle(
-          SDL_FPoint bodySpaceOrigin,
+          Vector2 bodySpaceOrigin,
           float radius)
         {
             // Get the axis on the polygon closest to the circle's origin
@@ -191,8 +191,8 @@ namespace OriNoco
                 return false;
 
             int numVertices = this.countBody;
-            SDL_FPoint a = this.bodyVertices[foundIndex];
-            SDL_FPoint b = this.bodyVertices[(foundIndex + 1) % numVertices];
+            Vector2 a = this.bodyVertices[foundIndex];
+            Vector2 b = this.bodyVertices[(foundIndex + 1) % numVertices];
             Axis axis = this.bodyAxes[foundIndex];
 
             // If the circle is past one of the two vertices, check it like
@@ -221,7 +221,7 @@ namespace OriNoco
                 // Distance between the ray origin and the axis/edge along the 
                 // normal (i.e., shortest distance between ray origin and the edge)
                 float proj =
-                  SDL_FPoint.Dot(curAxis.Normal, bodySpaceRay.origin) - curAxis.Width;
+                  Vector2.Dot(curAxis.Normal, bodySpaceRay.origin) - curAxis.Width;
 
                 // See if the point is outside of any of the axes
                 if (proj > 0.0f)
@@ -229,7 +229,7 @@ namespace OriNoco
 
                 // Projection of the ray direction onto the axis normal (use 
                 // negative normal because we want to get the penetration length)
-                float slope = SDL_FPoint.Dot(-curAxis.Normal, bodySpaceRay.direction);
+                float slope = Vector2.Dot(-curAxis.Normal, bodySpaceRay.direction);
 
                 if (slope == 0.0f)
                     continue;
@@ -305,7 +305,7 @@ namespace OriNoco
         /// <summary>
         /// Gets the vertices defining an edge of the polygon.
         /// </summary>
-        internal void GetEdge(int indexFirst, out SDL_FPoint a, out SDL_FPoint b)
+        internal void GetEdge(int indexFirst, out Vector2 a, out Vector2 b)
         {
             a = this.worldVertices[indexFirst];
             b = this.worldVertices[(indexFirst + 1) % this.countWorld];
@@ -323,12 +323,12 @@ namespace OriNoco
         /// A world-space point query, used as a shortcut in collision tests.
         /// </summary>
         internal bool ContainsPoint(
-          SDL_FPoint worldSpacePoint)
+          Vector2 worldSpacePoint)
         {
             for (int i = 0; i < this.countWorld; i++)
             {
                 Axis axis = this.worldAxes[i];
-                if (SDL_FPoint.Dot(axis.Normal, worldSpacePoint) > axis.Width)
+                if (Vector2.Dot(axis.Normal, worldSpacePoint) > axis.Width)
                     return false;
             }
             return true;
@@ -338,12 +338,12 @@ namespace OriNoco
         /// Special case that ignores axes pointing away from the normal.
         /// </summary>
         internal bool ContainsPointPartial(
-          SDL_FPoint worldSpacePoint,
-          SDL_FPoint worldSpaceNormal)
+          Vector2 worldSpacePoint,
+          Vector2 worldSpaceNormal)
         {
             foreach (Axis axis in this.worldAxes)
-                if (SDL_FPoint.Dot(axis.Normal, worldSpaceNormal) >= 0.0f &&
-                    SDL_FPoint.Dot(axis.Normal, worldSpacePoint) > axis.Width)
+                if (Vector2.Dot(axis.Normal, worldSpaceNormal) >= 0.0f &&
+                    Vector2.Dot(axis.Normal, worldSpacePoint) > axis.Width)
                     return false;
             return true;
         }
@@ -355,14 +355,14 @@ namespace OriNoco
             if ((this.worldVertices == null) ||
                 (this.worldVertices.Length < length))
             {
-                this.worldVertices = new SDL_FPoint[length];
+                this.worldVertices = new Vector2[length];
                 this.worldAxes = new Axis[length];
             }
 
             if ((this.bodyVertices == null) ||
                 (this.bodyVertices.Length < length))
             {
-                this.bodyVertices = new SDL_FPoint[length];
+                this.bodyVertices = new Vector2[length];
                 this.bodyAxes = new Axis[length];
             }
         }
@@ -373,9 +373,9 @@ namespace OriNoco
 
             for (int i = 0; i < this.countBody; i++)
             {
-                SDL_FPoint v = this.bodyVertices[i];
-                SDL_FPoint u = this.bodyVertices[(i + 1) % this.countBody];
-                SDL_FPoint w = this.bodyVertices[(i + 2) % this.countBody];
+                Vector2 v = this.bodyVertices[i];
+                Vector2 u = this.bodyVertices[(i + 1) % this.countBody];
+                Vector2 w = this.bodyVertices[(i + 2) % this.countBody];
 
                 sum += u.x * (v.y - w.y);
             }
@@ -390,11 +390,11 @@ namespace OriNoco
 
             for (int i = 0; i < this.countBody; i++)
             {
-                SDL_FPoint v = this.bodyVertices[i];
-                SDL_FPoint u = this.bodyVertices[(i + 1) % this.countBody];
+                Vector2 v = this.bodyVertices[i];
+                Vector2 u = this.bodyVertices[(i + 1) % this.countBody];
 
                 float a = OriNocoMath.Cross(u, v);
-                float b = v.sqrMagnitude + u.sqrMagnitude + SDL_FPoint.Dot(v, u);
+                float b = v.sqrMagnitude + u.sqrMagnitude + Vector2.Dot(v, u);
                 s1 += a * b;
                 s2 += a;
             }
@@ -412,7 +412,7 @@ namespace OriNoco
 
             // Pre-compute and initialize values
             float shortestDist = float.MaxValue;
-            SDL_FPoint v3 = bodySpaceRay.direction.Left();
+            Vector2 v3 = bodySpaceRay.direction.Left();
 
             // Check the edges -- this will be different from the raycast because
             // we care about staying within the ends of the edge line segment
@@ -421,15 +421,15 @@ namespace OriNoco
                 Axis curAxis = this.bodyAxes[i];
 
                 // Push the edges out by the radius
-                SDL_FPoint extension = curAxis.Normal * radius;
-                SDL_FPoint a = this.bodyVertices[i] + extension;
-                SDL_FPoint b = this.bodyVertices[(i + 1) % this.countBody] + extension;
+                Vector2 extension = curAxis.Normal * radius;
+                Vector2 a = this.bodyVertices[i] + extension;
+                Vector2 b = this.bodyVertices[(i + 1) % this.countBody] + extension;
 
                 // Update the check for containment
                 if (couldBeContained == true)
                 {
                     float proj =
-                      SDL_FPoint.Dot(curAxis.Normal, bodySpaceRay.origin) - curAxis.Width;
+                      Vector2.Dot(curAxis.Normal, bodySpaceRay.origin) - curAxis.Width;
 
                     // The point lies outside of the outer layer
                     if (proj > radius)
@@ -449,17 +449,17 @@ namespace OriNoco
                 }
 
                 // For the cast, only consider rays pointing towards the edge
-                if (SDL_FPoint.Dot(curAxis.Normal, bodySpaceRay.direction) >= 0.0f)
+                if (Vector2.Dot(curAxis.Normal, bodySpaceRay.direction) >= 0.0f)
                     continue;
 
                 // See: 
                 // https://rootllama.wordpress.com/2014/06/20/ray-line-segment-intersection-test-in-2d/
-                SDL_FPoint v1 = bodySpaceRay.origin - a;
-                SDL_FPoint v2 = b - a;
+                Vector2 v1 = bodySpaceRay.origin - a;
+                Vector2 v2 = b - a;
 
-                float denominator = SDL_FPoint.Dot(v2, v3);
+                float denominator = Vector2.Dot(v2, v3);
                 float t1 = OriNocoMath.Cross(v2, v1) / denominator;
-                float t2 = SDL_FPoint.Dot(v1, v3) / denominator;
+                float t2 = Vector2.Dot(v1, v3) / denominator;
 
                 if ((t2 >= 0.0f) && (t2 <= 1.0f) && (t1 > 0.0f) && (t1 < shortestDist))
                 {

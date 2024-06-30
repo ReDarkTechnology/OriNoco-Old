@@ -27,5 +27,12 @@ namespace OriNoco
         {
             Renderer.Run();
         }
+
+        private void EditorView_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            EditorForm.OnUpdate -= EditorForm_OnUpdate;
+            EditorForm.Editor = null;
+            Dispose();
+        }
     }
 }

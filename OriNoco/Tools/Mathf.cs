@@ -342,7 +342,7 @@ namespace OriNoco
 			return num;
 		}
 
-		internal static bool LineIntersection(SDL_FPoint p1, SDL_FPoint p2, SDL_FPoint p3, SDL_FPoint p4, ref SDL_FPoint result)
+		internal static bool LineIntersection(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, ref Vector2 result)
 		{
 			float num = p2.x - p1.x;
 			float num2 = p2.y - p1.y;
@@ -360,13 +360,13 @@ namespace OriNoco
 				float num6 = p3.x - p1.x;
 				float num7 = p3.y - p1.y;
 				float num8 = (num6 * num4 - num7 * num3) / num5;
-				result = new SDL_FPoint(p1.x + num8 * num, p1.y + num8 * num2);
+				result = new Vector2(p1.x + num8 * num, p1.y + num8 * num2);
 				result2 = true;
 			}
 			return result2;
 		}
 
-		internal static bool LineSegmentIntersection(SDL_FPoint p1, SDL_FPoint p2, SDL_FPoint p3, SDL_FPoint p4, ref SDL_FPoint result)
+		internal static bool LineSegmentIntersection(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, ref Vector2 result)
 		{
 			float num = p2.x - p1.x;
 			float num2 = p2.y - p1.y;
@@ -397,7 +397,7 @@ namespace OriNoco
 					}
 					else
 					{
-						result = new SDL_FPoint(p1.x + num8 * num, p1.y + num8 * num2);
+						result = new Vector2(p1.x + num8 * num, p1.y + num8 * num2);
 						result2 = true;
 					}
 				}

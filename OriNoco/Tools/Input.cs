@@ -44,7 +44,7 @@ namespace OriNoco
 			}
 			
 			mouseWheel = m_mW;
-			m_mW = SDL_FPoint.zero;
+			m_mW = Vector2.zero;
 		}
 		
 		public static bool GetKeyDown(KeyCode key)
@@ -105,15 +105,15 @@ namespace OriNoco
 		}
 		
 		
-		public static SDL_FPoint mousePosition {
+		public static Vector2 mousePosition {
 			get {
 				int x, y;
 				SDL.SDL_GetMouseState(out x, out y);
-				return new SDL_FPoint(x, y);
+				return new Vector2(x, y);
 			}
 		}
-		public static SDL_FPoint m_mW;
-		public static SDL_FPoint mouseWheel;
+		public static Vector2 m_mW;
+		public static Vector2 mouseWheel;
 		public static bool IsMouseHovering(Rect a)
 		{
 			var b = new Rect(mousePosition.x - 1, mousePosition.y - 1, 2, 2);

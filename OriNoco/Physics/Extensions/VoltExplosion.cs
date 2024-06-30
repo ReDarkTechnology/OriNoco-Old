@@ -20,7 +20,7 @@ namespace OriNoco
         private OriNocoBuffer<OriNocoBody> occludingBodies;
 
         public void PerformExplosion(
-          SDL_FPoint origin,
+          Vector2 origin,
           float radius,
           VoltExplosionCallback callback,
           VoltBodyFilter targetFilter = null,
@@ -53,7 +53,7 @@ namespace OriNoco
 
             for (int i = 0; i < rayCount; i++)
             {
-                SDL_FPoint normal = OriNocoMath.Polar(angleIncrement * i);
+                Vector2 normal = OriNocoMath.Polar(angleIncrement * i);
                 ray = new OriNocoRayCast(origin, normal, radius);
 
                 float minDistance =
@@ -111,7 +111,7 @@ namespace OriNoco
         /// and pass the target filter test. Does not test actual shapes.
         /// </summary>
         private void PopulateFiltered(
-          SDL_FPoint origin,
+          Vector2 origin,
           float radius,
           VoltBodyFilter targetFilter,
           int ticksBehind,

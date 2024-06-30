@@ -86,7 +86,7 @@ namespace OriNoco
     /// Checks if a point is contained in this shape. 
     /// Begins with an AABB check.
     /// </summary>
-    internal bool QueryPoint(SDL_FPoint bodySpacePoint)
+    internal bool QueryPoint(Vector2 bodySpacePoint)
     {
       // Queries and casts on shapes are always done in body space
       if (this.bodySpaceAABB.QueryPoint(bodySpacePoint))
@@ -98,7 +98,7 @@ namespace OriNoco
     /// Checks if a circle overlaps with this shape. 
     /// Begins with an AABB check.
     /// </summary>
-    internal bool QueryCircle(SDL_FPoint bodySpaceOrigin, float radius)
+    internal bool QueryCircle(Vector2 bodySpaceOrigin, float radius)
     {
       // Queries and casts on shapes are always done in body space
       if (this.bodySpaceAABB.QueryCircleApprox(bodySpaceOrigin, radius))
@@ -178,10 +178,10 @@ namespace OriNoco
 
     #region Test Overrides
     protected abstract bool ShapeQueryPoint(
-      SDL_FPoint bodySpacePoint);
+      Vector2 bodySpacePoint);
 
     protected abstract bool ShapeQueryCircle(
-      SDL_FPoint bodySpaceOrigin,
+      Vector2 bodySpaceOrigin,
       float radius);
 
     protected abstract bool ShapeRayCast(

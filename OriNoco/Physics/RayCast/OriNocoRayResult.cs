@@ -18,13 +18,13 @@ namespace OriNoco
         }
 
         public float Distance { get { return this.distance; } }
-        public SDL_FPoint Normal { get { return this.normal; } }
+        public Vector2 Normal { get { return this.normal; } }
 
         private OriNocoShape shape;
         private float distance;
-        internal SDL_FPoint normal;
+        internal Vector2 normal;
 
-        public SDL_FPoint ComputePoint(ref OriNocoRayCast cast)
+        public Vector2 ComputePoint(ref OriNocoRayCast cast)
         {
             return cast.origin + (cast.direction * this.distance);
         }
@@ -32,7 +32,7 @@ namespace OriNoco
         internal void Set(
           OriNocoShape shape,
           float distance,
-          SDL_FPoint normal)
+          Vector2 normal)
         {
             if (this.IsValid == false || distance < this.distance)
             {
@@ -51,7 +51,7 @@ namespace OriNoco
         {
             this.shape = shape;
             this.distance = 0.0f;
-            this.normal = SDL_FPoint.zero;
+            this.normal = Vector2.zero;
         }
     }
 }

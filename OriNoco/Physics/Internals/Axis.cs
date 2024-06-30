@@ -27,13 +27,13 @@ namespace OriNoco
     /// </summary>
     internal struct Axis
     {
-        internal SDL_FPoint Normal { get { return this.normal; } }
+        internal Vector2 Normal { get { return this.normal; } }
         internal float Width { get { return this.width; } }
 
-        private readonly SDL_FPoint normal;
+        private readonly Vector2 normal;
         private readonly float width;
 
-        internal Axis(SDL_FPoint normal, float width)
+        internal Axis(Vector2 normal, float width)
         {
             this.normal = normal;
             this.width = width;

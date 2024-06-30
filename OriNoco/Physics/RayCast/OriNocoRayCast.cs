@@ -7,16 +7,16 @@ namespace OriNoco
     /// </summary>
     public struct OriNocoRayCast
     {
-        internal readonly SDL_FPoint origin;
-        internal readonly SDL_FPoint direction;
-        internal readonly SDL_FPoint invDirection;
+        internal readonly Vector2 origin;
+        internal readonly Vector2 direction;
+        internal readonly Vector2 invDirection;
         internal readonly float distance;
         internal readonly bool signX;
         internal readonly bool signY;
 
-        public OriNocoRayCast(SDL_FPoint origin, SDL_FPoint destination)
+        public OriNocoRayCast(Vector2 origin, Vector2 destination)
         {
-            SDL_FPoint delta = destination - origin;
+            Vector2 delta = destination - origin;
 
             this.origin = origin;
             direction = delta.normalized;
@@ -24,10 +24,10 @@ namespace OriNoco
             signX = direction.x < 0.0f;
             signY = direction.y < 0.0f;
             invDirection =
-              new SDL_FPoint(1.0f / direction.x, 1.0f / direction.y);
+              new Vector2(1.0f / direction.x, 1.0f / direction.y);
         }
 
-        public OriNocoRayCast(SDL_FPoint origin, SDL_FPoint direction, float distance)
+        public OriNocoRayCast(Vector2 origin, Vector2 direction, float distance)
         {
             this.origin = origin;
             this.direction = direction;
@@ -35,7 +35,7 @@ namespace OriNoco
             signX = direction.x < 0.0f;
             signY = direction.y < 0.0f;
             invDirection =
-              new SDL_FPoint(1.0f / direction.x, 1.0f / direction.y);
+              new Vector2(1.0f / direction.x, 1.0f / direction.y);
         }
     }
 }

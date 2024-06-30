@@ -62,8 +62,8 @@ namespace OriNoco
         /// </summary>
         public bool TryGetSpace(
           int ticksBehind,
-          out SDL_FPoint position,
-          out SDL_FPoint facing)
+          out Vector2 position,
+          out Vector2 facing)
         {
             if (ticksBehind < 0)
                 throw new ArgumentOutOfRangeException("ticksBehind");
@@ -148,13 +148,13 @@ namespace OriNoco
 
         // Some basic properties are stored in an internal mutable
         // record to avoid code redundancy when performing conversions
-        public SDL_FPoint Position
+        public Vector2 Position
         {
             get { return this.currentState.position; }
             private set { this.currentState.position = value; }
         }
 
-        public SDL_FPoint Facing
+        public Vector2 Facing
         {
             get { return this.currentState.facing; }
             private set { this.currentState.facing = value; }
@@ -184,10 +184,10 @@ namespace OriNoco
         /// </summary>
         public float Angle { get; private set; }
 
-        public SDL_FPoint LinearVelocity { get; set; }
+        public Vector2 LinearVelocity { get; set; }
         public float AngularVelocity { get; set; }
 
-        public SDL_FPoint Force { get; private set; }
+        public Vector2 Force { get; private set; }
         public float Torque { get; private set; }
 
         public float Mass { get; private set; }
@@ -195,7 +195,7 @@ namespace OriNoco
         public float InvMass { get; private set; }
         public float InvInertia { get; private set; }
 
-        internal SDL_FPoint BiasVelocity { get; private set; }
+        internal Vector2 BiasVelocity { get; private set; }
         internal float BiasRotation { get; private set; }
 
         // Used for broadphase structures
@@ -213,18 +213,18 @@ namespace OriNoco
             this.Torque += torque;
         }
 
-        public void AddForce(SDL_FPoint force)
+        public void AddForce(Vector2 force)
         {
             this.Force += force;
         }
 
-        public void AddForce(SDL_FPoint force, SDL_FPoint point)
+        public void AddForce(Vector2 force, Vector2 point)
         {
             this.Force += force;
             this.Torque += OriNocoMath.Cross(this.Position - point, force);
         }
 
-        public void Set(SDL_FPoint position, float radians)
+        public void Set(Vector2 position, float radians)
         {
             this.Position = position;
             this.Angle = radians;
@@ -252,7 +252,7 @@ namespace OriNoco
         /// Begins with AABB checks unless bypassed.
         /// </summary>
         internal bool QueryPoint(
-          SDL_FPoint point,
+          Vector2 point,
           int ticksBehind,
           bool bypassAABB = false)
         {
@@ -264,7 +264,7 @@ namespace OriNoco
                     return false;
 
             // Actual query on shapes done in body space
-            SDL_FPoint bodySpacePoint = record.WorldToBodyPoint(point);
+            Vector2 bodySpacePoint = record.WorldToBodyPoint(point);
             for (int i = 0; i < this.shapeCount; i++)
                 if (this.shapes[i].QueryPoint(bodySpacePoint))
                     return true;
@@ -276,7 +276,7 @@ namespace OriNoco
         /// Begins with AABB checks.
         /// </summary>
         internal bool QueryCircle(
-          SDL_FPoint origin,
+          Vector2 origin,
           float radius,
           int ticksBehind,
           bool bypassAABB = false)
@@ -289,7 +289,7 @@ namespace OriNoco
                     return false;
 
             // Actual query on shapes done in body space
-            SDL_FPoint bodySpaceOrigin = record.WorldToBodyPoint(origin);
+            Vector2 bodySpaceOrigin = record.WorldToBodyPoint(origin);
             for (int i = 0; i < this.shapeCount; i++)
                 if (this.shapes[i].QueryCircle(bodySpaceOrigin, radius))
                     return true;
@@ -367,7 +367,7 @@ namespace OriNoco
         }
 
         internal void InitializeDynamic(
-          SDL_FPoint position,
+          Vector2 position,
           float radians,
           OriNocoShape[] shapesToAdd)
         {
@@ -377,7 +377,7 @@ namespace OriNoco
         }
 
         internal void InitializeStatic(
-          SDL_FPoint position,
+          Vector2 position,
           float radians,
           OriNocoShape[] shapesToAdd)
         {
@@ -387,7 +387,7 @@ namespace OriNoco
         }
 
         private void Initialize(
-          SDL_FPoint position,
+          Vector2 position,
           float radians,
           OriNocoShape[] shapesToAdd)
         {
@@ -454,13 +454,13 @@ namespace OriNoco
             this.history = null;
             this.currentState = default(HistoryRecord);
 
-            this.LinearVelocity = SDL_FPoint.zero;
+            this.LinearVelocity = Vector2.zero;
             this.AngularVelocity = 0.0f;
 
-            this.Force = SDL_FPoint.zero;
+            this.Force = Vector2.zero;
             this.Torque = 0.0f;
 
-            this.BiasVelocity = SDL_FPoint.zero;
+            this.BiasVelocity = Vector2.zero;
             this.BiasRotation = 0.0f;
         }
 
@@ -481,10 +481,10 @@ namespace OriNoco
             this.CollisionFilter = null;
 
             this.Angle = 0.0f;
-            this.LinearVelocity = SDL_FPoint.zero;
+            this.LinearVelocity = Vector2.zero;
             this.AngularVelocity = 0.0f;
 
-            this.Force = SDL_FPoint.zero;
+            this.Force = Vector2.zero;
             this.Torque = 0.0f;
 
             this.Mass = 0.0f;
@@ -492,7 +492,7 @@ namespace OriNoco
             this.InvMass = 0.0f;
             this.InvInertia = 0.0f;
 
-            this.BiasVelocity = SDL_FPoint.zero;
+            this.BiasVelocity = Vector2.zero;
             this.BiasRotation = 0.0f;
 
             this.history = null;
@@ -511,13 +511,13 @@ namespace OriNoco
             return true;
         }
 
-        internal void ApplyImpulse(SDL_FPoint j, SDL_FPoint r)
+        internal void ApplyImpulse(Vector2 j, Vector2 r)
         {
             this.LinearVelocity += this.InvMass * j;
             this.AngularVelocity -= this.InvInertia * OriNocoMath.Cross(j, r);
         }
 
-        internal void ApplyBias(SDL_FPoint j, SDL_FPoint r)
+        internal void ApplyBias(Vector2 j, Vector2 r)
         {
             this.BiasVelocity += this.InvMass * j;
             this.BiasRotation -= this.InvInertia * OriNocoMath.Cross(j, r);
@@ -525,12 +525,12 @@ namespace OriNoco
         #endregion
 
         #region Transformation Shortcuts
-        internal SDL_FPoint WorldToBodyPointCurrent(SDL_FPoint vector)
+        internal Vector2 WorldToBodyPointCurrent(Vector2 vector)
         {
             return this.currentState.WorldToBodyPoint(vector);
         }
 
-        internal SDL_FPoint BodyToWorldPointCurrent(SDL_FPoint vector)
+        internal Vector2 BodyToWorldPointCurrent(Vector2 vector)
         {
             return this.currentState.BodyToWorldPoint(vector);
         }
@@ -584,7 +584,7 @@ namespace OriNoco
             this.AngularVelocity *= this.World.Damping;
 
             // Calculate total force and torque
-            SDL_FPoint totalForce = this.Force * this.InvMass;
+            Vector2 totalForce = this.Force * this.InvMass;
             float totalTorque = this.Torque * this.InvInertia;
 
             // See http://www.niksula.hut.fi/~hkankaan/Homepages/gravity.html
@@ -596,7 +596,7 @@ namespace OriNoco
         }
 
         private void IntegrateForces(
-          SDL_FPoint force,
+          Vector2 force,
           float torque,
           float mult)
         {
@@ -615,9 +615,9 @@ namespace OriNoco
 
         private void ClearForces()
         {
-            this.Force = SDL_FPoint.zero;
+            this.Force = Vector2.zero;
             this.Torque = 0.0f;
-            this.BiasVelocity = SDL_FPoint.zero;
+            this.BiasVelocity = Vector2.zero;
             this.BiasRotation = 0.0f;
         }
 

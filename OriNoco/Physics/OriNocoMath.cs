@@ -5,70 +5,70 @@ namespace OriNoco
     public static class OriNocoMath
     {
         #region Transformations
-        public static SDL_FPoint WorldToBodyPoint(
-          SDL_FPoint bodyPosition,
-          SDL_FPoint bodyFacing,
-          SDL_FPoint vector)
+        public static Vector2 WorldToBodyPoint(
+          Vector2 bodyPosition,
+          Vector2 bodyFacing,
+          Vector2 vector)
         {
             return (vector - bodyPosition).InvRotate(bodyFacing);
         }
 
-        public static SDL_FPoint WorldToBodyDirection(
-          SDL_FPoint bodyFacing,
-          SDL_FPoint vector)
+        public static Vector2 WorldToBodyDirection(
+          Vector2 bodyFacing,
+          Vector2 vector)
         {
             return vector.InvRotate(bodyFacing);
         }
         #endregion
 
         #region Body-Space to World-Space Transformations
-        public static SDL_FPoint BodyToWorldPoint(
-          SDL_FPoint bodyPosition,
-          SDL_FPoint bodyFacing,
-          SDL_FPoint vector)
+        public static Vector2 BodyToWorldPoint(
+          Vector2 bodyPosition,
+          Vector2 bodyFacing,
+          Vector2 vector)
         {
             return vector.Rotate(bodyFacing) + bodyPosition;
         }
 
-        public static SDL_FPoint BodyToWorldDirection(
-          SDL_FPoint bodyFacing,
-          SDL_FPoint vector)
+        public static Vector2 BodyToWorldDirection(
+          Vector2 bodyFacing,
+          Vector2 vector)
         {
             return vector.Rotate(bodyFacing);
         }
         #endregion
 
-        public static SDL_FPoint Right(this SDL_FPoint v)
+        public static Vector2 Right(this Vector2 v)
         {
-            return new SDL_FPoint(v.y, -v.x);
+            return new Vector2(v.y, -v.x);
         }
 
-        public static SDL_FPoint Left(this SDL_FPoint v)
+        public static Vector2 Left(this Vector2 v)
         {
-            return new SDL_FPoint(-v.y, v.x);
+            return new Vector2(-v.y, v.x);
         }
 
-        public static SDL_FPoint Rotate(this SDL_FPoint v, SDL_FPoint b)
+        public static Vector2 Rotate(this Vector2 v, Vector2 b)
         {
-            return new SDL_FPoint(v.x * b.x - v.y * b.y, v.y * b.x + v.x * b.y);
+            return new Vector2(v.x * b.x - v.y * b.y, v.y * b.x + v.x * b.y);
         }
 
-        public static SDL_FPoint InvRotate(this SDL_FPoint v, SDL_FPoint b)
+        public static Vector2 InvRotate(this Vector2 v, Vector2 b)
         {
-            return new SDL_FPoint(v.x * b.x + v.y * b.y, v.y * b.x - v.x * b.y);
+            return new Vector2(v.x * b.x + v.y * b.y, v.y * b.x - v.x * b.y);
         }
 
-        public static float Angle(this SDL_FPoint v)
+        public static float Angle(this Vector2 v)
         {
             return Mathf.Atan2(v.y, v.x);
         }
 
-        public static SDL_FPoint Polar(float radians)
+        public static Vector2 Polar(float radians)
         {
-            return new SDL_FPoint(Mathf.Cos(radians), Mathf.Sin(radians));
+            return new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
         }
 
-        public static float Cross(SDL_FPoint a, SDL_FPoint b)
+        public static float Cross(Vector2 a, Vector2 b)
         {
             return a.x * b.y - a.y * b.x;
         }

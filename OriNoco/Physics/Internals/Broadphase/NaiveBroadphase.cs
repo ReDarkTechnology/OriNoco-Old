@@ -57,14 +57,14 @@ namespace OriNoco
         }
 
         public void QueryPoint(
-          SDL_FPoint point,
+          Vector2 point,
           OriNocoBuffer<OriNocoBody> outBuffer)
         {
             outBuffer.Add(this.bodies, this.count);
         }
 
         public void QueryCircle(
-          SDL_FPoint point,
+          Vector2 point,
           float radius,
           OriNocoBuffer<OriNocoBody> outBuffer)
         {

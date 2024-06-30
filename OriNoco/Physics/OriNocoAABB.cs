@@ -23,7 +23,7 @@ namespace OriNoco
         Mathf.Max(aabb1.right, aabb2.right));
     }
 
-    public static OriNocoAABB CreateSwept(OriNocoAABB source, SDL_FPoint vector)
+    public static OriNocoAABB CreateSwept(OriNocoAABB source, Vector2 vector)
     {
       float top = source.top;
       float bottom = source.bottom;
@@ -78,24 +78,24 @@ namespace OriNoco
     }
     #endregion
 
-    public SDL_FPoint TopLeft 
+    public Vector2 TopLeft 
     { 
-      get { return new SDL_FPoint(this.left, this.top); } 
+      get { return new Vector2(this.left, this.top); } 
     }
 
-    public SDL_FPoint TopRight 
+    public Vector2 TopRight 
     { 
-      get { return new SDL_FPoint(this.right, this.top); } 
+      get { return new Vector2(this.right, this.top); } 
     }
 
-    public SDL_FPoint BottomLeft 
+    public Vector2 BottomLeft 
     { 
-      get { return new SDL_FPoint(this.left, this.bottom); } 
+      get { return new Vector2(this.left, this.bottom); } 
     }
 
-    public SDL_FPoint BottomRight 
+    public Vector2 BottomRight 
     { 
-      get { return new SDL_FPoint(this.right, this.bottom); } 
+      get { return new Vector2(this.right, this.bottom); } 
     }
 
     public float Top { get { return this.top; } }
@@ -112,10 +112,10 @@ namespace OriNoco
       get { return 2.0f * (this.Width + this.Height); } 
     }
 
-    public SDL_FPoint Center { get { return this.ComputeCenter(); } }
-    public SDL_FPoint Extent 
+    public Vector2 Center { get { return this.ComputeCenter(); } }
+    public Vector2 Extent 
     { 
-      get { return new SDL_FPoint(this.Width * 0.5f, this.Height * 0.5f); } 
+      get { return new Vector2(this.Width * 0.5f, this.Height * 0.5f); } 
     }
 
     private readonly float top;
@@ -127,7 +127,7 @@ namespace OriNoco
     /// <summary>
     /// Performs a point test on the AABB.
     /// </summary>
-    public bool QueryPoint(SDL_FPoint point)
+    public bool QueryPoint(Vector2 point)
     {
       return 
         left <= point.x && 
@@ -139,7 +139,7 @@ namespace OriNoco
     /// <summary>
     /// Note: This doesn't take rounded edges into account.
     /// </summary>
-    public bool QueryCircleApprox(SDL_FPoint origin, float radius)
+    public bool QueryCircleApprox(Vector2 origin, float radius)
     {
       return
         (left - radius) <= origin.x &&
@@ -199,10 +199,10 @@ namespace OriNoco
       this.right = right;
     }
 
-    public OriNocoAABB(SDL_FPoint center, SDL_FPoint extents)
+    public OriNocoAABB(Vector2 center, Vector2 extents)
     {
-      SDL_FPoint topRight = center + extents;
-      SDL_FPoint bottomLeft = center - extents;
+      Vector2 topRight = center + extents;
+      Vector2 bottomLeft = center - extents;
 
       top = topRight.y;
       right = topRight.x;
@@ -210,34 +210,34 @@ namespace OriNoco
       left = bottomLeft.x;
     }
 
-    public OriNocoAABB(SDL_FPoint center, float radius)
-      : this (center, new SDL_FPoint(radius, radius))
+    public OriNocoAABB(Vector2 center, float radius)
+      : this (center, new Vector2(radius, radius))
     {
     }
 
-    public OriNocoAABB ComputeTopLeft(SDL_FPoint center)
+    public OriNocoAABB ComputeTopLeft(Vector2 center)
     {
       return new OriNocoAABB(top, center.y, left, center.x);
     }
 
-    public OriNocoAABB ComputeTopRight(SDL_FPoint center)
+    public OriNocoAABB ComputeTopRight(Vector2 center)
     {
       return new OriNocoAABB(top, center.y, center.x, right);
     }
 
-    public OriNocoAABB ComputeBottomLeft(SDL_FPoint center)
+    public OriNocoAABB ComputeBottomLeft(Vector2 center)
     {
       return new OriNocoAABB(center.y, bottom, left, center.x);
     }
 
-    public OriNocoAABB ComputeBottomRight(SDL_FPoint center)
+    public OriNocoAABB ComputeBottomRight(Vector2 center)
     {
       return new OriNocoAABB(center.y, bottom, center.x, right);
     }
 
-    private SDL_FPoint ComputeCenter()
+    private Vector2 ComputeCenter()
     {
-      return new SDL_FPoint(
+      return new Vector2(
         (Width * 0.5f) + left, 
         (Height * 0.5f) + bottom);
     }

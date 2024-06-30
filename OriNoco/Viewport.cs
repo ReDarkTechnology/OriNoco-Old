@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SDL2;
-using static SDL2.SDL;
+﻿using static SDL2.SDL;
 
 namespace OriNoco
 {
@@ -21,12 +15,12 @@ namespace OriNoco
         /// <summary>
         /// The offset of the game environment
         /// </summary>
-        public SDL_FPoint offset = new SDL_FPoint(0f, 0f);
+        public Vector2 offset = new Vector2(0f, 0f);
 
         /// <summary>
         /// The offset of the screen
         /// </summary>
-        public SDL_FPoint screenOffset = new SDL_FPoint(0f, 0f);
+        public Vector2 screenOffset = new Vector2(0f, 0f);
 
         /// <summary>
         /// The angle of the game environment (in degrees)
@@ -34,7 +28,7 @@ namespace OriNoco
         public float rotation = 0f;
 
         public Viewport() { }
-        public Viewport(float pixelScale, SDL_FPoint offset, SDL_FPoint screenOffset, float rotation)
+        public Viewport(float pixelScale, Vector2 offset, Vector2 screenOffset, float rotation)
         {
             this.pixelScale = pixelScale;
             this.offset = offset;
@@ -42,21 +36,21 @@ namespace OriNoco
             this.rotation = rotation;
         }
 
-        public SDL_FPoint ToScreenPoint(SDL_FPoint point)
+        public Vector2 ToScreenPoint(Vector2 point)
         {
             return RotatePoint(point - offset, rotation) * pixelScale + screenOffset;
         }
 
-        public static SDL_FPoint RotatePoint(SDL_FPoint point, float degrees)
+        public static Vector2 RotatePoint(Vector2 point, float degrees)
         {
             float radians = degrees * Mathf.Deg2Rad;
-            return new SDL_FPoint(point.x * Mathf.Cos(radians) - point.y * Mathf.Sin(radians),
+            return new Vector2(point.x * Mathf.Cos(radians) - point.y * Mathf.Sin(radians),
                 point.x * Mathf.Sin(radians) + point.y * Mathf.Cos(radians));
         }
 
-        public SDL_FRect ToScreenRect(SDL_FRect rect)
+        public Rect ToScreenRect(Rect rect)
         {
-            return new SDL_FRect(ToScreenPoint(rect.center), rect.size * pixelScale);
+            return new Rect(ToScreenPoint(rect.center), rect.size * pixelScale);
         }
     }
 }

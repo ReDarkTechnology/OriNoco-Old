@@ -256,7 +256,7 @@ namespace OriNoco
         }
 
         public void QueryPoint(
-          SDL_FPoint point,
+          Vector2 point,
           OriNocoBuffer<OriNocoBody> outBuffer)
         {
             this.StartQuery(outBuffer);
@@ -269,7 +269,7 @@ namespace OriNoco
         }
 
         public void QueryCircle(
-          SDL_FPoint point,
+          Vector2 point,
           float radius,
           OriNocoBuffer<OriNocoBody> outBuffer)
         {

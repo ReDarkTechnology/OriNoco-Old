@@ -58,12 +58,12 @@ namespace OriNoco.Tools
 			return false;
 		}
 		
-		public static string ToReadable(this SDL2.SDL.SDL_Rect r)
+		public static string ToReadable(this SDL2.SDL.Rect32 r)
 		{
 			return string.Format("[X = {0}, Y = {1}, W = {2}, H = {3}]", r.x, r.y, r.w, r.h);
 		}
 		
-		public static string ToReadable(this SDL2.SDL.SDL_Point p)
+		public static string ToReadable(this SDL2.SDL.Point p)
 		{
 			return string.Format("[X = {0}, Y = {1}]", p.x, p.y);
 		}
@@ -74,19 +74,19 @@ namespace OriNoco.Tools
 				return ((Type)sender).FullName;
 			return sender.GetType().IsAssignableFrom(typeof(String)) ? sender.ToString() : sender.GetType().FullName;
 		}
-		public static SDL_Color ColorFromString(string str)
+		public static SDL2.SDL.Color32 ColorFromString(string str)
 		{
 			str = str.Remove(0, 1);
 			str = str.Remove(str.Length - 1, 1);
 			var values = str.Split(",".ToCharArray());
-			return new SDL_Color(byte.Parse(values[0]), byte.Parse(values[1]), byte.Parse(values[2]), byte.Parse(values[3]));
+			return new SDL2.SDL.Color32(byte.Parse(values[0]), byte.Parse(values[1]), byte.Parse(values[2]), byte.Parse(values[3]));
 		}
 		public static bool HaveAnyInheritanceWith(this object obj, Type type)
 		{
 			var t = obj.GetType();
 			return (t.IsSubclassOf(type) || t.IsAssignableFrom(type));
 		}
-		public static string ColorToString(SDL_Color color)
+		public static string ColorToString(SDL2.SDL.Color32 color)
 		{
 			string build = "(";
 			build += color.r;
@@ -99,14 +99,14 @@ namespace OriNoco.Tools
 			build += ")";
 			return build;
 		}
-		public static SDL_FPoint SDL_FPointFromString(string str)
+		public static Vector2 SDL_FPointFromString(string str)
 		{
 			str = str.Remove(0);
 			str = str.Remove(str.Length - 1);
 			var values = str.Split(",".ToCharArray());
-			return new SDL_FPoint(float.Parse(values[0]), float.Parse(values[1]));
+			return new Vector2(float.Parse(values[0]), float.Parse(values[1]));
 		}
-		public static string SDL_FPointToString(SDL_FPoint vector)
+		public static string SDL_FPointToString(Vector2 vector)
 		{
 			string build = "(";
 			build += vector.x;
@@ -115,16 +115,16 @@ namespace OriNoco.Tools
 			build += ")";
 			return build;
 		}
-		public static SDL_FPoint GetScreenSize(bool squarize = true)
+		public static Vector2 GetScreenSize(bool squarize = true)
 		{
-			var screen = new SDL_FPoint(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height);
+			var screen = new Vector2(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height);
 			if (squarize) {
 				screen = SquarizeVector(screen);
 			}
 			return screen;
 		}
-		public static SDL_FPoint LocalCanvas = new SDL_FPoint(1f, 1f);
-		public static SDL_FPoint ConvertWorldToLocal(SDL_FPoint world)
+		public static Vector2 LocalCanvas = new Vector2(1f, 1f);
+		public static Vector2 ConvertWorldToLocal(Vector2 world)
 		{
 			var screen = GetScreenSize();
 			var originalScreen = GetScreenSize(false);
@@ -132,7 +132,7 @@ namespace OriNoco.Tools
 			var ratio = GetRatio(LocalCanvas, screen);
 			return world * (float)ratio;
 		}
-		public static SDL_FPoint ConvertLocalToWorld(SDL_FPoint local)
+		public static Vector2 ConvertLocalToWorld(Vector2 local)
 		{
 			var screen = GetScreenSize();
 			var originalScreen = GetScreenSize(false);
@@ -141,18 +141,18 @@ namespace OriNoco.Tools
 			var scale = ResizeScreen(LocalCanvas, GetScreenSize());
 			return local / (float)ratio;
 		}
-		public static SDL_FPoint SquarizeVector(SDL_FPoint vector)
+		public static Vector2 SquarizeVector(Vector2 vector)
 		{
 			// disable once CompareOfFloatsByEqualityOperator
 			if (vector.x < vector.y) {
-				return new SDL_FPoint(vector.x, vector.x);
+				return new Vector2(vector.x, vector.x);
 			}
 			if (vector.x > vector.y) {
-				return new SDL_FPoint(vector.y, vector.y);
+				return new Vector2(vector.y, vector.y);
 			}
 			return vector;
 		}
-		public static SDL_FPoint ResizeScreen(SDL_FPoint canvas, SDL_FPoint original)
+		public static Vector2 ResizeScreen(Vector2 canvas, Vector2 original)
 		{
 			double ratio = GetRatio(canvas, original);
 
@@ -160,17 +160,17 @@ namespace OriNoco.Tools
 			float newHeight = original.y * (float)ratio;
 			float newWidth = original.x * (float)ratio;
         
-			return new SDL_FPoint(newWidth, newHeight);
+			return new Vector2(newWidth, newHeight);
 		}
-		public static SDL_FPoint ResizeScreen(SDL_FPoint original, double ratio)
+		public static Vector2 ResizeScreen(Vector2 original, double ratio)
 		{
 			// now we can get the new height and width
 			float newHeight = original.y * (float)ratio;
 			float newWidth = original.x * (float)ratio;
         
-			return new SDL_FPoint(newWidth, newHeight);
+			return new Vector2(newWidth, newHeight);
 		}
-		public static double GetRatio(SDL_FPoint canvas, SDL_FPoint original)
+		public static double GetRatio(Vector2 canvas, Vector2 original)
 		{
 			// Figure out the ratio
 			double ratioX = (double)canvas.x / (double)original.x;
@@ -256,6 +256,7 @@ namespace OriNoco.Tools
 			}
 			return controll.ToArray();
 		}
+
 		#region Encryption
 		// This constant is used to determine the keysize of the encryption algorithm in bits.
 		// We divide this by 8 within the code below to get the equivalent number of bytes.
@@ -357,6 +358,7 @@ namespace OriNoco.Tools
 			return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
 		}
 		#endregion
+
 		public static byte[] Compress(byte[] data)
 		{
 			var output = new MemoryStream();
@@ -439,7 +441,7 @@ namespace OriNoco.Tools
 			return new MoveableSerialized(root, recursive);
 		}
 		
-        public static ResizeValue ResizeItemIntoCanvas(SDL_FPoint canvas, SDL_FPoint original)
+        public static ResizeValue ResizeItemIntoCanvas(Vector2 canvas, Vector2 original)
         {
             // Figure out the ratio
             double ratioX = (double)canvas.x / (double)original.x;
@@ -455,8 +457,8 @@ namespace OriNoco.Tools
             // (one of these will always be zero)
             double posX = (canvas.x - (original.x * ratio)) / 2;
             double posY = (canvas.y - (original.y * ratio)) / 2;
-            return new ResizeValue(new SDL_FPoint((float)newWidth, (float)newHeight),
-                                   new SDL_FPoint((float)posX, (float)posY),
+            return new ResizeValue(new Vector2((float)newWidth, (float)newHeight),
+                                   new Vector2((float)posX, (float)posY),
                                    ratio);
         }
 		#endregion
@@ -464,31 +466,12 @@ namespace OriNoco.Tools
 
 	public static class SDLUtility
 	{
-		public static SDL2.SDL.SDL_Rect ToRect(this Rect rect)
-		{
-			return (SDL2.SDL.SDL_Rect)rect;
-		}
-		public static SDL2.SDL.SDL_Point ToPoint(this SDL_FPoint vector)
-		{
-			return (SDL2.SDL.SDL_Point)vector;
-		}
+		public static Rect32 ToRect(this Rect rect) => new Rect32(rect.x.ToInt(), rect.y.ToInt(), rect.w.ToInt(), rect.h.ToInt());
+		public static SDL2.SDL.Point ToPoint(this Vector2 vector) => (SDL2.SDL.Point)vector;
+		public static string Serialize(this object obj, bool prettyPrint = false) => Newtonsoft.Json.JsonConvert.SerializeObject(obj, prettyPrint ? Newtonsoft.Json.Formatting.Indented : Newtonsoft.Json.Formatting.None);
 		
-		public static string Serialize(this object obj, bool prettyPrint = false)
-		{
-			var f = Newtonsoft.Json.Formatting.None;
-			if(prettyPrint) f = Newtonsoft.Json.Formatting.Indented;
-			return Newtonsoft.Json.JsonConvert.SerializeObject(obj, f);
-		}
-		
-		public static object Deserialize(this string serialized)
-		{
-			return Newtonsoft.Json.JsonConvert.DeserializeObject(serialized);
-		}
-		
-		public static T Deserialize<T>(this string serialized)
-		{
-			return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(serialized);
-		}
+		public static object Deserialize(this string serialized) => Newtonsoft.Json.JsonConvert.DeserializeObject(serialized);
+		public static T Deserialize<T>(this string serialized) => Newtonsoft.Json.JsonConvert.DeserializeObject<T>(serialized);
 		
 		public static string RemoveLastPath(this string dir)
 		{
@@ -503,11 +486,11 @@ namespace OriNoco.Tools
 	
 	public struct ResizeValue
 	{
-		public SDL_FPoint size;
-		public SDL_FPoint position;
+		public Vector2 size;
+		public Vector2 position;
 		public double ratio;
 		
-		public ResizeValue(SDL_FPoint size, SDL_FPoint position, double ratio)
+		public ResizeValue(Vector2 size, Vector2 position, double ratio)
 		{
 			this.size = size;
 			this.position = position;

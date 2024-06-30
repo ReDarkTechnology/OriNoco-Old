@@ -43,8 +43,8 @@ namespace OriNoco
     }
 
     internal bool AddContact(
-      SDL_FPoint position,
-      SDL_FPoint normal,
+      Vector2 position,
+      Vector2 normal,
       float penetration)
     {
       if (this.used >= OriNocoConfig.MAX_CONTACTS)

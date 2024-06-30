@@ -113,7 +113,7 @@ namespace OriNoco
         /// Creates a new polygon shape from world-space vertices.
         /// </summary>
         public OriNocoPolygon CreatePolygonWorldSpace(
-          SDL_FPoint[] worldVertices,
+          Vector2[] worldVertices,
           float density = OriNocoConfig.DEFAULT_DENSITY,
           float friction = OriNocoConfig.DEFAULT_FRICTION,
           float restitution = OriNocoConfig.DEFAULT_RESTITUTION)
@@ -131,7 +131,7 @@ namespace OriNoco
         /// Creates a new polygon shape from body-space vertices.
         /// </summary>
         public OriNocoPolygon CreatePolygonBodySpace(
-          SDL_FPoint[] bodyVertices,
+          Vector2[] bodyVertices,
           float density = OriNocoConfig.DEFAULT_DENSITY,
           float friction = OriNocoConfig.DEFAULT_FRICTION,
           float restitution = OriNocoConfig.DEFAULT_RESTITUTION)
@@ -149,7 +149,7 @@ namespace OriNoco
         /// Creates a new circle shape from a world-space origin.
         /// </summary>
         public OriNocoCircle CreateCircleWorldSpace(
-          SDL_FPoint worldSpaceOrigin,
+          Vector2 worldSpaceOrigin,
           float radius,
           float density = OriNocoConfig.DEFAULT_DENSITY,
           float friction = OriNocoConfig.DEFAULT_FRICTION,
@@ -169,7 +169,7 @@ namespace OriNoco
         /// Creates a new static body and adds it to the world.
         /// </summary>
         public OriNocoBody CreateStaticBody(
-          SDL_FPoint position,
+          Vector2 position,
           float radians,
           params OriNocoShape[] shapesToAdd)
         {
@@ -183,7 +183,7 @@ namespace OriNoco
         /// Creates a new dynamic body and adds it to the world.
         /// </summary>
         public OriNocoBody CreateDynamicBody(
-          SDL_FPoint position,
+          Vector2 position,
           float radians,
           params OriNocoShape[] shapesToAdd)
         {
@@ -199,7 +199,7 @@ namespace OriNoco
         /// </summary>
         public void AddBody(
           OriNocoBody body,
-          SDL_FPoint position,
+          Vector2 position,
           float radians)
         {
 #if DEBUG
@@ -292,7 +292,7 @@ namespace OriNoco
         /// invalidate the resulting enumeration from this function.
         /// </summary>
         public OriNocoBuffer<OriNocoBody> QueryPoint(
-          SDL_FPoint point,
+          Vector2 point,
           VoltBodyFilter filter = null,
           int ticksBehind = 0)
         {
@@ -321,7 +321,7 @@ namespace OriNoco
         /// invalidate the resulting enumeration from this function.
         /// </summary>
         public OriNocoBuffer<OriNocoBody> QueryCircle(
-          SDL_FPoint origin,
+          Vector2 origin,
           float radius,
           VoltBodyFilter filter = null,
           int ticksBehind = 0)

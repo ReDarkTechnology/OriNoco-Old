@@ -17,14 +17,14 @@ namespace OriNoco
     }
     #endregion
 
-    private SDL_FPoint position;
-    private SDL_FPoint normal;
+    private Vector2 position;
+    private Vector2 normal;
     private float penetration;
 
-    private SDL_FPoint toA;
-    private SDL_FPoint toB;
-    private SDL_FPoint toALeft;
-    private SDL_FPoint toBLeft;
+    private Vector2 toA;
+    private Vector2 toB;
+    private Vector2 toALeft;
+    private Vector2 toBLeft;
 
     private float nMass;
     private float tMass;
@@ -41,8 +41,8 @@ namespace OriNoco
     }
 
     internal Contact Assign(
-      SDL_FPoint position,
-      SDL_FPoint normal,
+      Vector2 position,
+      Vector2 normal,
       float penetration)
     {
       this.Reset();
@@ -71,7 +71,7 @@ namespace OriNoco
       this.jBias = 0;
       this.restitution =
         manifold.Restitution *
-        SDL_FPoint.Dot(
+        Vector2.Dot(
           this.normal,
           this.RelativeVelocity(bodyA, bodyB));
     }
@@ -92,9 +92,9 @@ namespace OriNoco
       float elasticity = bodyA.World.Elasticity;
 
       // Calculate relative bias velocity
-      SDL_FPoint vb1 = bodyA.BiasVelocity + (bodyA.BiasRotation * this.toALeft);
-      SDL_FPoint vb2 = bodyB.BiasVelocity + (bodyB.BiasRotation * this.toBLeft);
-      float vbn = SDL_FPoint.Dot((vb1 - vb2), this.normal);
+      Vector2 vb1 = bodyA.BiasVelocity + (bodyA.BiasRotation * this.toALeft);
+      Vector2 vb2 = bodyB.BiasVelocity + (bodyB.BiasRotation * this.toBLeft);
+      float vbn = Vector2.Dot((vb1 - vb2), this.normal);
 
       // Calculate and clamp the bias impulse
       float jbn = this.nMass * (vbn - this.bias);
@@ -105,8 +105,8 @@ namespace OriNoco
       this.ApplyNormalBiasImpulse(bodyA, bodyB, jbn);
 
       // Calculate relative velocity
-      SDL_FPoint vr = this.RelativeVelocity(bodyA, bodyB);
-      float vrn = SDL_FPoint.Dot(vr, this.normal);
+      Vector2 vr = this.RelativeVelocity(bodyA, bodyB);
+      float vrn = Vector2.Dot(vr, this.normal);
 
       // Calculate and clamp the normal impulse
       float jn = nMass * (vrn + (this.restitution * elasticity));
@@ -114,7 +114,7 @@ namespace OriNoco
       this.cachedNormalImpulse += jn;
 
       // Calculate the relative tangent velocity
-      float vrt = SDL_FPoint.Dot(vr, this.normal.Left());
+      float vrt = Vector2.Dot(vr, this.normal.Left());
 
       // Calculate and clamp the friction impulse
       float jtMax = manifold.Friction * this.cachedNormalImpulse;
@@ -130,14 +130,14 @@ namespace OriNoco
     #region Internals
     private void Reset()
     {
-      this.position = SDL_FPoint.zero;
-      this.normal = SDL_FPoint.zero;
+      this.position = Vector2.zero;
+      this.normal = Vector2.zero;
       this.penetration = 0.0f;
 
-      this.toA = SDL_FPoint.zero;
-      this.toB = SDL_FPoint.zero;
-      this.toALeft = SDL_FPoint.zero;
-      this.toBLeft = SDL_FPoint.zero;
+      this.toA = Vector2.zero;
+      this.toB = Vector2.zero;
+      this.toALeft = Vector2.zero;
+      this.toBLeft = Vector2.zero;
 
       this.nMass = 0.0f;
       this.tMass = 0.0f;
@@ -152,7 +152,7 @@ namespace OriNoco
     private float KScalar(
       OriNocoBody bodyA,
       OriNocoBody bodyB,
-      SDL_FPoint normal)
+      Vector2 normal)
     {
       float massSum = bodyA.InvMass + bodyB.InvMass;
       float r1cnSqr = OriNocoMath.Square(OriNocoMath.Cross(this.toA, normal));
@@ -163,7 +163,7 @@ namespace OriNoco
         bodyB.InvInertia * r2cnSqr;
     }
 
-    private SDL_FPoint RelativeVelocity(OriNocoBody bodyA, OriNocoBody bodyB)
+    private Vector2 RelativeVelocity(OriNocoBody bodyA, OriNocoBody bodyB)
     {
       return
         (bodyA.AngularVelocity * this.toALeft + bodyA.LinearVelocity) -
@@ -175,7 +175,7 @@ namespace OriNoco
       OriNocoBody bodyB,
       float normalBiasImpulse)
     {
-      SDL_FPoint impulse = normalBiasImpulse * this.normal;
+      Vector2 impulse = normalBiasImpulse * this.normal;
       bodyA.ApplyBias(-impulse, this.toA);
       bodyB.ApplyBias(impulse, this.toB);
     }
@@ -186,9 +186,9 @@ namespace OriNoco
       float normalImpulseMagnitude,
       float tangentImpulseMagnitude)
     {
-      SDL_FPoint impulseWorld =
-        new SDL_FPoint(normalImpulseMagnitude, tangentImpulseMagnitude);
-      SDL_FPoint impulse = impulseWorld.Rotate(this.normal);
+      Vector2 impulseWorld =
+        new Vector2(normalImpulseMagnitude, tangentImpulseMagnitude);
+      Vector2 impulse = impulseWorld.Rotate(this.normal);
 
       bodyA.ApplyImpulse(-impulse, this.toA);
       bodyB.ApplyImpulse(impulse, this.toB);

@@ -13,8 +13,8 @@ namespace OriNoco
     internal struct HistoryRecord
     {
         internal OriNocoAABB aabb;
-        internal SDL_FPoint position;
-        internal SDL_FPoint facing;
+        internal Vector2 position;
+        internal Vector2 facing;
 
         internal void Store(ref HistoryRecord other)
         {
@@ -24,12 +24,12 @@ namespace OriNoco
         }
 
         #region World-Space to Body-Space Transformations
-        internal SDL_FPoint WorldToBodyPoint(SDL_FPoint vector)
+        internal Vector2 WorldToBodyPoint(Vector2 vector)
         {
             return OriNocoMath.WorldToBodyPoint(this.position, this.facing, vector);
         }
 
-        internal SDL_FPoint WorldToBodyDirection(SDL_FPoint vector)
+        internal Vector2 WorldToBodyDirection(Vector2 vector)
         {
             return OriNocoMath.WorldToBodyDirection(this.facing, vector);
         }
@@ -44,20 +44,20 @@ namespace OriNoco
         #endregion
 
         #region Body-Space to World-Space Transformations
-        internal SDL_FPoint BodyToWorldPoint(SDL_FPoint vector)
+        internal Vector2 BodyToWorldPoint(Vector2 vector)
         {
             return OriNocoMath.BodyToWorldPoint(this.position, this.facing, vector);
         }
 
-        internal SDL_FPoint BodyToWorldDirection(SDL_FPoint vector)
+        internal Vector2 BodyToWorldDirection(Vector2 vector)
         {
             return OriNocoMath.BodyToWorldDirection(this.facing, vector);
         }
 
         internal Axis BodyToWorldAxis(Axis axis)
         {
-            SDL_FPoint normal = axis.Normal.Rotate(this.facing);
-            float width = SDL_FPoint.Dot(normal, this.position) + axis.Width;
+            Vector2 normal = axis.Normal.Rotate(this.facing);
+            float width = Vector2.Dot(normal, this.position) + axis.Width;
             return new Axis(normal, width);
         }
         #endregion

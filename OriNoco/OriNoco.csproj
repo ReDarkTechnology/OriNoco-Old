@@ -64,14 +64,17 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ChartView.cs">
+    <Compile Include="Camera2D.cs" />
+    <Compile Include="Timeline\Keyframe.cs" />
+    <Compile Include="Timeline\TimelineLane.cs" />
+    <Compile Include="Views\ChartView.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="ChartView.Designer.cs">
+    <Compile Include="Views\ChartView.Designer.cs">
       <DependentUpon>ChartView.cs</DependentUpon>
     </Compile>
     <Compile Include="ControlUtil.cs" />
-    <Compile Include="EditorRenderer.cs" />
+    <Compile Include="Renderers\EditorRenderer.cs" />
     <Compile Include="Drawables\TextureRenderer.cs" />
     <Compile Include="EditorForm.cs">
       <SubType>Form</SubType>
@@ -79,17 +82,17 @@
     <Compile Include="EditorForm.Designer.cs">
       <DependentUpon>EditorForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="EditorView.cs">
+    <Compile Include="Views\EditorView.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="EditorView.Designer.cs">
+    <Compile Include="Views\EditorView.Designer.cs">
       <DependentUpon>EditorView.cs</DependentUpon>
     </Compile>
     <Compile Include="Game.cs" />
-    <Compile Include="GameView.cs">
+    <Compile Include="Views\GameView.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="GameView.Designer.cs">
+    <Compile Include="Views\GameView.Designer.cs">
       <DependentUpon>GameView.cs</DependentUpon>
     </Compile>
     <Compile Include="OriNocoResources.Designer.cs">
@@ -102,7 +105,6 @@
     <Compile Include="Structs\Enums.cs" />
     <Compile Include="Structs\Handle.cs" />
     <Compile Include="Structs\Matrix2x2.cs" />
-    <Compile Include="Structs\Rect.cs" />
     <Compile Include="Tools\Configuration.cs" />
     <Compile Include="Tools\Coroutine.cs" />
     <Compile Include="Tools\Cursor.cs" />
@@ -143,16 +145,16 @@
     <Compile Include="Physics\OriNocoMath.cs" />
     <Compile Include="Physics\OriNocoShape.cs" />
     <Compile Include="Physics\OriNocoWorld.cs" />
-    <EmbeddedResource Include="ChartView.resx">
+    <EmbeddedResource Include="Views\ChartView.resx">
       <DependentUpon>ChartView.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="EditorForm.resx">
       <DependentUpon>EditorForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="EditorView.resx">
+    <EmbeddedResource Include="Views\EditorView.resx">
       <DependentUpon>EditorView.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="GameView.resx">
+    <EmbeddedResource Include="Views\GameView.resx">
       <DependentUpon>GameView.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="OriNocoResources.resx">
@@ -193,6 +195,9 @@
     <None Include="Resources\Windowed.png" />
     <None Include="Resources\Icon.png" />
     <None Include="Resources\Icon.ico" />
+    <Content Include="Images\Note.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="SDL2.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
