@@ -39,6 +39,7 @@ namespace OriNoco
 
         public int w;
         public int h;
+        public Vector2 size { get; private set; }
 
         public TextureRenderer(IntPtr renderer, string filePath)
         {
@@ -51,6 +52,7 @@ namespace OriNoco
             SDL_QueryTexture(texture, out _, out _, out w, out h);
 
             sourceRect = new Rect32(0, 0, w, h);
+            size = new Vector2(w, h);
 
             _renderer = renderer;
         }

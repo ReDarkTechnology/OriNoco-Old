@@ -234,7 +234,7 @@ namespace OriNoco
                 {
                     if (MouseMove != null)
                     {
-                        int x = Control.MousePosition.X, y = Control.MousePosition.Y;
+                        int x = MousePosition.X, y = MousePosition.Y;
 
                         MouseMove(null, new MouseEventArgs(MouseButtons.None, 0, x, y, 0));
                     }

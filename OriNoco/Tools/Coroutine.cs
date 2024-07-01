@@ -18,20 +18,6 @@ namespace OriNoco
             return routine.MoveNext();
         }
     }
- 
-    public class WaitForKeyDown : CustomYieldInstruction
-    {
-        private readonly KeyCode keyCode;
-        public WaitForKeyDown(KeyCode KeyCode)
-        {
-            this.keyCode = KeyCode;
-        }
- 
-        public override bool GetKeepWaiting()
-        {
-            return !Input.GetKeyDown(keyCode);
-        }
-    }
     public class WaitForSeconds : CustomYieldInstruction
     {
         private readonly float finishTime;

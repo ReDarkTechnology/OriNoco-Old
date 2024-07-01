@@ -1,4 +1,5 @@
-﻿using static SDL2.SDL;
+﻿using System.Collections.Specialized;
+using static SDL2.SDL;
 
 namespace OriNoco
 {
@@ -38,14 +39,17 @@ namespace OriNoco
 
         public Vector2 ToScreenPoint(Vector2 point)
         {
-            return RotatePoint(point - offset, rotation) * pixelScale + screenOffset;
+            var coords = point - offset;
+            coords.y = -coords.y;
+            return RotatePoint(coords, offset, rotation) * pixelScale + screenOffset;
         }
 
-        public static Vector2 RotatePoint(Vector2 point, float degrees)
+        public static Vector2 RotatePoint(Vector2 point, Vector2 center, float degrees)
         {
             float radians = degrees * Mathf.Deg2Rad;
-            return new Vector2(point.x * Mathf.Cos(radians) - point.y * Mathf.Sin(radians),
+            var result = new Vector2(point.x * Mathf.Cos(radians) - point.y * Mathf.Sin(radians),
                 point.x * Mathf.Sin(radians) + point.y * Mathf.Cos(radians));
+            return result;
         }
 
         public Rect ToScreenRect(Rect rect)
