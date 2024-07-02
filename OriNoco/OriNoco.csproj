@@ -66,6 +66,9 @@
   <ItemGroup>
     <Compile Include="Camera2D.cs" />
     <Compile Include="InputManager.cs" />
+    <Compile Include="Objects\EditorPlayer.cs" />
+    <Compile Include="Objects\GamePlayer.cs" />
+    <Compile Include="Renderers\GameRenderer.cs" />
     <Compile Include="Rhine\RhineEnums.cs" />
     <Compile Include="Rhine\RhineUtils.cs" />
     <Compile Include="TextureColored.cs" />

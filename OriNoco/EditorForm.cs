@@ -35,6 +35,8 @@ namespace OriNoco
 
             mainDockPanel.Theme = Theme;
             Theme.ApplyTo(menuStrip);
+            Theme.ApplyTo(statusStrip);
+            Theme.ApplyTo(toolStrip);
 
             ColorReference.BorderColor = Color.FromArgb(0, 122, 204);
             this.AddBorder(Point.Empty, ColorReference);
